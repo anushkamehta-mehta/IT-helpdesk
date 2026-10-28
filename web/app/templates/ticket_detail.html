@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% block title %}Ticket #{{ ticket_id }} - IT Helpdesk{% endblock %}
+{% block content %}
+<section id="ticket-page" data-ticket-id="{{ ticket_id }}">
+  <a id="back-link" class="back" href="#">&larr; Back to tickets</a>
+  <p id="load-error" class="alert alert-bad" hidden></p>
+
+  <div id="ticket-view" hidden>
+    <div class="card">
+      <div class="page-head">
+        <div class="title-row"><h1 id="ticket-title"></h1></div>
+        <div><span id="badge-status"></span> <span id="badge-priority"></span></div>
+      </div>
+      <dl id="ticket-meta" class="meta"></dl>
+      <h3>Description</h3>
+      <p id="ticket-description" class="pre"></p>
+      <div id="resolution-box" hidden>
+        <h3>Resolution notes</h3>
+        <p id="ticket-resolution" class="pre"></p>
+      </div>
+    </div>
+
+    <form id="it-panel" class="card" hidden novalidate>
+      <h2>Manage ticket</h2>
+      <p class="muted">Assign, update the status or priority, and close with resolution notes.</p>
+      <div class="grid">
+        <label>Assign to <select name="assignee"><option value="">Unassigned</option></select></label>
+        <label>Status <select name="status"></select></label>
+        <label>Priority
+          <select name="priority"><option>Low</option><option>Medium</option><option>High</option></select>
+        </label>
+      </div>
+      <label>Resolution notes (required to close) <textarea name="resolution" rows="4"></textarea></label>
+      <p id="panel-error" class="alert alert-bad" hidden></p>
+      <p id="panel-ok" class="alert alert-ok" hidden></p>
+      <button type="submit" class="btn btn-primary">Save changes</button>
+      <button type="button" id="close-btn" class="btn btn-dark">Close ticket</button>
+    </form>
+
+    <div class="card">
+      <h2>Comments</h2>
+      <div id="comments"></div>
+      <form id="comment-form" novalidate>
+        <label>Add a comment <textarea name="body" rows="3" required></textarea></label>
+        <p id="comment-error" class="alert alert-bad" hidden></p>
+        <button type="submit" class="btn btn-primary">Post comment</button>
+      </form>
+      <p id="comments-closed" class="muted" hidden>This ticket is closed. Comments are disabled.</p>
+    </div>
+  </div>
+</section>
+{% endblock %}
+{% block scripts %}<script src="{{ url_for('static', filename='js/ticket_detail.js') }}"></script>{% endblock %}

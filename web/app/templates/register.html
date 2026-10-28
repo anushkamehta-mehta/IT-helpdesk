@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block title %}Register - IT Helpdesk{% endblock %}
+{% block shell %}
+<main class="auth">
+  <section class="hero hero-xl">
+    <div>
+      <h1>Get IT help in a few clicks.</h1>
+      <p>Create your employee account to submit and follow support tickets.</p>
+    </div>
+    <div class="float-pill">
+        <span class="avatar sq">HD</span>
+        <div class="txt"><strong>IT Helpdesk</strong><small>Internal support portal</small></div>
+        <span class="vr"></span>
+        <span class="icon-btn" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg></span>
+        <a class="icon-btn" href="{{ url_for('auth.register') }}" title="Create an account" aria-label="Create an account"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></svg></a>
+      </div>
+  </section>
+  <section class="card auth-card">
+    <h2>Create account</h2>
+    <p class="lead">Employee registration.</p>
+    <form id="register-form" novalidate>
+      <label>Full name <input type="text" name="full_name" maxlength="100" autocomplete="name" required></label>
+      <label>Email <input type="email" name="email" autocomplete="username" required></label>
+      <label>Password (min 8 characters) <input type="password" name="password" minlength="8" autocomplete="new-password" required></label>
+      <label>Confirm password <input type="password" name="confirm" minlength="8" autocomplete="new-password" required></label>
+      <p id="error" class="alert alert-bad" hidden></p>
+      <button type="submit" class="btn btn-primary btn-block">Register</button>
+    </form>
+    <p class="muted">Already registered? <a href="{{ url_for('auth.login') }}">Log in</a></p>
+  </section>
+</main>
+{% endblock %}
+{% block scripts %}<script src="{{ url_for('static', filename='js/register.js') }}"></script>{% endblock %}

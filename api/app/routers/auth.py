@@ -1,0 +1,62 @@
+from fastapi import APIRouter, Depends, HTTPException, Response, status
+from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
+from sqlalchemy.orm import Session
+
+from app.core.config import get_settings
+from app.core.security import create_access_token, hash_password, verify_password
+from app.db.session import get_db
+from app.dependencies import COOKIE_NAME, get_current_user
+from app.models import User
+from app.schemas.user import LoginRequest, RegisterRequest, UserOut
+
+router = APIRouter(prefix="/auth", tags=["auth"])
+
+# Used so a login for an unknown email takes about as long as one for a known email.
+_DUMMY_HASH = hash_password("dummy-password-for-timing")
+
+
+@router.post("/register", response_model=UserOut, status_code=status.HTTP_201_CREATED)
+def register(data: RegisterRequest, db: Session = Depends(get_db)):
+    """Self-registration. Always creates an employee; IT accounts are created by script."""
+    email = data.email.strip().lower()
+    if db.scalar(select(User).where(User.email == email)):
+        raise HTTPException(status.HTTP_409_CONFLICT, "An account with this email already exists")
+    user = User(full_name=data.full_name, email=email, password_hash=hash_password(data.password), role="employee")
+    db.add(user)
+    try:
+        db.commit()
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(status.HTTP_409_CONFLICT, "An account with this email already exists")
+    return UserOut.model_validate(user)
+
+
+@router.post("/login", response_model=UserOut)
+def login(data: LoginRequest, response: Response, db: Session = Depends(get_db)):
+    user = db.scalar(select(User).where(User.email == data.email.strip().lower()))
+    password_ok = verify_password(data.password, user.password_hash if user else _DUMMY_HASH)
+    if not user or not password_ok or not user.is_active:
+        raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Invalid email or password")
+    settings = get_settings()
+    response.set_cookie(
+        COOKIE_NAME,
+        create_access_token(user.id, user.role),
+        max_age=settings.jwt_expire_minutes * 60,
+        httponly=True,
+        secure=settings.cookie_secure,
+        samesite="lax",
+        path="/",
+    )
+    return UserOut.model_validate(user)
+
+
+@router.post("/logout", status_code=status.HTTP_204_NO_CONTENT)
+def logout(response: Response):
+    settings = get_settings()
+    response.delete_cookie(COOKIE_NAME, path="/", httponly=True, secure=settings.cookie_secure, samesite="lax")
+
+
+@router.get("/me", response_model=UserOut)
+def me(user: User = Depends(get_current_user)):
+    return UserOut.model_validate(user)

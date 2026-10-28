@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block title %}New ticket - IT Helpdesk{% endblock %}
+{% block content %}
+<a class="back" href="{{ url_for('employee.my_tickets') }}">&larr; Back to my tickets</a>
+<section class="card">
+  <h1>Create a ticket</h1>
+  <p class="muted">Describe the problem and we'll route it to the IT team.</p>
+  <form id="ticket-form" novalidate>
+    <label>Title <input type="text" name="title" maxlength="200" required></label>
+    <div class="grid">
+      <label>Category
+        <select name="category_id" required><option value="">Select a category...</option></select>
+      </label>
+      <label>Priority
+        <select name="priority"><option>Low</option><option selected>Medium</option><option>High</option></select>
+      </label>
+    </div>
+    <label>Description <textarea name="description" rows="6" required></textarea></label>
+    <p id="error" class="alert alert-bad" hidden></p>
+    <button type="submit" class="btn btn-primary">Submit ticket</button>
+    <a class="btn btn-light" href="{{ url_for('employee.my_tickets') }}">Cancel</a>
+  </form>
+</section>
+{% endblock %}
+{% block scripts %}<script src="{{ url_for('static', filename='js/new_ticket.js') }}"></script>{% endblock %}
