@@ -89,10 +89,24 @@ def create_ticket(db: Session, user: User, data: TicketCreate) -> Ticket:
     return get_ticket(db, user, ticket.id)
 
 
+IT_ONLY_FIELDS = ("status", "assigned_to", "resolution_notes")
+
+
 def update_ticket(db: Session, user: User, ticket_id: int, data: TicketUpdate) -> Ticket:
-    ticket = get_ticket(db, user, ticket_id)  # caller already enforced IT role
+    ticket = get_ticket(db, user, ticket_id)  # enforces employee ownership
+    if user.role != "it_team" and any(getattr(data, f) is not None for f in IT_ONLY_FIELDS):
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "Only the IT team can change status, assignee or resolution notes")
     if ticket.status == "Closed":
         raise HTTPException(status.HTTP_409_CONFLICT, "Closed tickets cannot be modified")
+
+    if data.title is not None:
+        ticket.title = data.title
+    if data.description is not None:
+        ticket.description = data.description
+    if data.category_id is not None:
+        if db.get(Category, data.category_id) is None:
+            raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, "Unknown category")
+        ticket.category_id = data.category_id
 
     if data.priority is not None:
         ticket.priority = data.priority
@@ -124,6 +138,12 @@ def update_ticket(db: Session, user: User, ticket_id: int, data: TicketUpdate) -
 
     db.commit()
     return get_ticket(db, user, ticket_id)
+
+
+def delete_ticket(db: Session, user: User, ticket_id: int) -> None:
+    ticket = get_ticket(db, user, ticket_id)  # enforces employee ownership
+    db.delete(ticket)  # comments go with it (ORM cascade + ON DELETE CASCADE)
+    db.commit()
 
 
 def add_comment(db: Session, user: User, ticket_id: int, data: CommentCreate) -> Ticket:

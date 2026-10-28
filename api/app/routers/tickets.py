@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.orm import Session
 
 from app.db.session import get_db
-from app.dependencies import get_current_user, require_employee, require_it
+from app.dependencies import get_current_user, require_employee
 from app.models import User
 from app.schemas.ticket import CommentCreate, TicketCreate, TicketDetail, TicketOut, TicketUpdate
 from app.services import tickets as service
@@ -43,9 +43,16 @@ def get_ticket(ticket_id: int, db: Session = Depends(get_db), user: User = Depen
 
 @router.patch("/{ticket_id}", response_model=TicketDetail)
 def update_ticket(
-    ticket_id: int, data: TicketUpdate, db: Session = Depends(get_db), user: User = Depends(require_it)
+    ticket_id: int, data: TicketUpdate, db: Session = Depends(get_db), user: User = Depends(get_current_user)
 ):
+    """Owners edit ticket details; IT can also manage status, assignee and resolution."""
     return TicketDetail.model_validate(service.update_ticket(db, user, ticket_id, data))
+
+
+@router.delete("/{ticket_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_ticket(ticket_id: int, db: Session = Depends(get_db), user: User = Depends(get_current_user)):
+    """Owners can delete their own tickets; IT can delete any ticket."""
+    service.delete_ticket(db, user, ticket_id)
 
 
 @router.post("/{ticket_id}/comments", response_model=TicketDetail, status_code=status.HTTP_201_CREATED)

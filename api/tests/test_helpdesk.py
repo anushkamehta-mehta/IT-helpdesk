@@ -48,7 +48,8 @@ def test_employee_cannot_use_it_endpoints(make_client):
     c = make_client()
     register_and_login(c, "alice@acme.com")
     t = c.post("/api/tickets", json=NEW).json()
-    assert c.patch(f"/api/tickets/{t['id']}", json={"priority": "Low"}).status_code == 403
+    assert c.patch(f"/api/tickets/{t['id']}", json={"status": "Closed"}).status_code == 403
+    assert c.patch(f"/api/tickets/{t['id']}", json={"assigned_to": 1}).status_code == 403
     assert c.get("/api/users/it-team").status_code == 403
 
 
@@ -104,3 +105,36 @@ def test_comments_and_search_filter(make_client):
     assert [t["title"] for t in it.get("/api/tickets", params={"q": "vpn"}).json()] == ["VPN issue"]
     assert len(it.get("/api/tickets", params={"priority": "High"}).json()) == 1
     assert len(it.get("/api/tickets", params={"unassigned": "true"}).json()) == 2
+
+
+def test_owner_can_edit_and_delete_ticket(make_client):
+    alice, bob = make_client(), make_client()
+    register_and_login(alice, "alice@acme.com")
+    register_and_login(bob, "bob@acme.com")
+    t = alice.post("/api/tickets", json=NEW).json()
+    alice.post(f"/api/tickets/{t['id']}/comments", json={"body": "any update?"})
+
+    edited = alice.patch(f"/api/tickets/{t['id']}", json={"title": "Laptop dead", "priority": "Low"}).json()
+    assert edited["title"] == "Laptop dead" and edited["priority"] == "Low"
+    assert edited["description"] == NEW["description"]
+    assert alice.patch(f"/api/tickets/{t['id']}", json={"title": "  "}).status_code == 422
+    assert alice.patch(f"/api/tickets/{t['id']}", json={"category_id": 999}).status_code == 422
+
+    # Other employees can neither edit nor delete it.
+    assert bob.patch(f"/api/tickets/{t['id']}", json={"title": "x"}).status_code == 404
+    assert bob.delete(f"/api/tickets/{t['id']}").status_code == 404
+
+    assert alice.delete(f"/api/tickets/{t['id']}").status_code == 204
+    assert alice.get(f"/api/tickets/{t['id']}").status_code == 404
+    assert alice.get("/api/tickets").json() == []
+
+
+def test_it_can_edit_and_delete_any_ticket(make_client):
+    emp, it = make_client(), make_client()
+    register_and_login(emp, "alice@acme.com")
+    login(it, "ivan@acme.com")
+    t = emp.post("/api/tickets", json=NEW).json()
+    assert it.patch(f"/api/tickets/{t['id']}", json={"description": "Fan noise"}).json()["description"] == "Fan noise"
+    assert it.delete(f"/api/tickets/{t['id']}").status_code == 204
+    assert emp.get("/api/tickets").json() == []
+    assert it.delete(f"/api/tickets/{t['id']}").status_code == 404

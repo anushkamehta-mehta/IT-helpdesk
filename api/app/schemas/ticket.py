@@ -23,8 +23,15 @@ class TicketCreate(BaseModel):
 
 
 class TicketUpdate(BaseModel):
-    """IT-only partial update. Omitted fields are left unchanged."""
+    """Partial update. Omitted fields are left unchanged.
 
+    Ticket owners may edit title/description/category/priority; status, assignee
+    and resolution notes are IT-only.
+    """
+
+    title: Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=200)] | None = None
+    description: Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=10000)] | None = None
+    category_id: int | None = None
     status: Status | None = None
     priority: Priority | None = None
     assigned_to: int | None = None

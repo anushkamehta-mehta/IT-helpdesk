@@ -102,6 +102,9 @@ textarea { resize: vertical; }
 .btn-light:hover { background: var(--field); }
 .btn-dark { background: var(--navy); color: #fff; }
 .btn-dark:hover { background: #121e2d; }
+.btn-danger { background: #fff; color: #b3173a; border-color: #f3b6c4; }
+.btn-danger:hover { background: var(--pink-l); }
+#ticket-actions { display: flex; gap: 0.6rem; flex-wrap: wrap; margin-top: 1.2rem; }
 .btn:disabled { opacity: .6; cursor: wait; }
 .btn-block { width: 100%; }
 .alert { padding: 0.7rem 1rem; border-radius: 14px; font-size: 0.9rem; font-weight: 500; }

@@ -11,6 +11,7 @@
   const $ = (id) => document.getElementById(id);
   const panel = $("it-panel");
   const commentForm = $("comment-form");
+  const editForm = $("edit-form");
   let ticket = null;
 
   $("back-link").href = homeFor(user.role);
@@ -47,7 +48,68 @@
 
     panel.hidden = !(isIT && !closed);
     if (isIT && !closed) fillPanel(t);
+
+    // The API lets owners and IT edit/delete; closed tickets can only be deleted.
+    const canManage = isIT || t.creator.id === user.id;
+    $("ticket-actions").hidden = !canManage;
+    $("edit-btn").hidden = closed;
+    $("edit-closed").hidden = !(canManage && closed);
+    editForm.hidden = true;
   }
+
+  function openEditForm() {
+    const f = editForm.elements;
+    f["title"].value = ticket.title;
+    f["description"].value = ticket.description;
+    f["category_id"].value = String(ticket.category.id);
+    f["priority"].value = ticket.priority;
+    showMessage($("edit-error"), "");
+    showMessage($("actions-ok"), "");
+    editForm.hidden = false;
+    editForm.scrollIntoView({ behavior: "smooth", block: "start" });
+    f["title"].focus({ preventScroll: true });
+  }
+
+  editForm.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const error = $("edit-error");
+    showMessage(error, "");
+    const f = editForm.elements;
+    const changes = {};
+    const title = f["title"].value.trim(), description = f["description"].value.trim();
+    if (!title || !description) return showMessage(error, "Title and description are required.");
+    if (title !== ticket.title) changes.title = title;
+    if (description !== ticket.description) changes.description = description;
+    if (Number(f["category_id"].value) !== ticket.category.id) changes.category_id = Number(f["category_id"].value);
+    if (f["priority"].value !== ticket.priority) changes.priority = f["priority"].value;
+    if (!Object.keys(changes).length) return showMessage(error, "No changes to save.");
+    await submitting(editForm.querySelector("button[type=submit]"), async () => {
+      try {
+        render(await api(`/tickets/${ticketId}`, { method: "PATCH", body: changes }));
+        showMessage($("actions-ok"), "Ticket updated.");
+        $("ticket-view").scrollIntoView({ behavior: "smooth", block: "start" });
+      } catch (err) {
+        showMessage(error, err.message);
+      }
+    });
+  });
+
+  $("edit-btn").addEventListener("click", openEditForm);
+  $("edit-cancel").addEventListener("click", () => { editForm.hidden = true; });
+
+  $("delete-btn").addEventListener("click", async (e) => {
+    if (!confirm("Delete this ticket and all its comments? This cannot be undone.")) return;
+    const error = $("actions-error");
+    showMessage(error, "");
+    await submitting(e.currentTarget, async () => {
+      try {
+        await api(`/tickets/${ticketId}`, { method: "DELETE" });
+        window.location.href = homeFor(user.role);
+      } catch (err) {
+        showMessage(error, err.message);
+      }
+    });
+  });
 
   function fillPanel(t) {
     const f = panel.elements;
@@ -120,6 +182,7 @@
   });
 
   try {
+    await loadCategories(editForm.elements["category_id"]);
     render(await api(`/tickets/${ticketId}`));
     $("ticket-view").hidden = false;
   } catch (e) {
