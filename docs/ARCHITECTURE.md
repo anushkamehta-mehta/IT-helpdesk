@@ -18,17 +18,19 @@ Browser (HTML/CSS/JS)
 * Login returns a signed JWT in an **httpOnly, SameSite=Lax** cookie (`Secure` in production), so JavaScript cannot read it (limits XSS token theft).
 * CSRF: every non-GET API request must include `X-Requested-With: fetch`. Cross-site pages cannot send that header without a CORS preflight, which the API refuses.
 * Page guards in JS only route users; **the API enforces every permission**.
-* Only employees can self-register. IT accounts are created with `python -m scripts.create_it_user`.
+* Only employees can self-register. Admins create accounts of any role (employee, IT team, admin) at `/admin`; the first admin is created with `python -m scripts.create_admin`.
 
 ## Permissions
-| Action | Employee | IT team |
-|---|---|---|
-| Register / login | yes | login only |
-| Create ticket | yes | no |
-| View tickets | own only | all |
-| Search / filter | own tickets | all tickets |
-| Comment | own tickets | any ticket |
-| Assign, change status/priority, resolution notes, close | no | yes |
+| Action | Employee | IT team | Admin |
+|---|---|---|---|
+| Register / login | yes | login only | login only |
+| Create ticket | yes | no | no |
+| View tickets | own only | all | - |
+| Search / filter | own tickets | all tickets | - |
+| Comment | own tickets | any ticket | - |
+| Edit title/description/category/priority, delete | own tickets | any ticket | - |
+| Assign, change status, resolution notes, close | no | yes | - |
+| Add, edit, deactivate, delete users (`/admin`) | no | no | yes |
 
 ## Ticket workflow
 `Open -> Assigned -> In Progress -> Closed`

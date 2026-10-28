@@ -180,6 +180,18 @@ tbody tr:last-child td { border-bottom: 0; }
 .priority-high { background: var(--pink-l); color: #d11f46; }
 .priority-medium { background: #fff1d1; color: #a86200; }
 .priority-low { background: var(--green-l); color: #0b8a63; }
+.role-employee { background: #dfe4ec; color: var(--navy); }
+.role-it-team { background: var(--orange-l); color: #d9420f; }
+.role-admin { background: var(--navy); color: #fff; }
+.status-active { background: var(--green-l); color: #0b8a63; }
+.status-inactive { background: #eef0f4; color: #7a8294; }
+
+/* ===== Admin ===== */
+.row-actions { display: flex; gap: 0.4rem; flex-wrap: wrap; }
+.pill-btn.danger { border-color: #d11f46; color: #d11f46; }
+.pill-btn.danger:hover { background: #d11f46; color: #fff; }
+.pill-btn:disabled { opacity: .6; cursor: wait; }
+tr.inactive td { opacity: .6; }
 
 /* ===== Ticket detail ===== */
 .meta { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 1rem 1.5rem; margin: 1.1rem 0 0.4rem; }

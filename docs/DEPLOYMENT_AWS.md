@@ -33,12 +33,13 @@ sudo chown ubuntu:ubuntu /etc/it-helpdesk/helpdesk.env && sudo chmod 600 /etc/it
 ```
 Production must have `COOKIE_SECURE=true`, empty `CORS_ORIGINS` and empty `API_BASE_URL`.
 
-## 5. First IT account
+## 5. First admin account
 ```bash
 cd /opt/it-helpdesk/api
 set -a; . /etc/it-helpdesk/helpdesk.env; set +a
-../venv/bin/python -m scripts.create_it_user
+../venv/bin/python -m scripts.create_admin
 ```
+Then add IT team members and employees from `/admin` in the browser.
 
 ## 6. Services and Nginx
 ```bash

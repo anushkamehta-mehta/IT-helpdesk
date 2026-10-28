@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% block title %}User management - IT Helpdesk{% endblock %}
+{% block content %}
+<section id="admin-page">
+  <div class="hero">
+    <div>
+      <h1>User management</h1>
+      <p id="hero-sub">Add employees, IT team members and admins, and manage their access.</p>
+    </div>
+  </div>
+
+  <form id="user-form" class="card" novalidate>
+    <h2 id="form-title">Add a user</h2>
+    <div class="grid">
+      <label>Full name <input type="text" name="full_name" maxlength="100" required></label>
+      <label>Email <input type="email" name="email" maxlength="255" required></label>
+      <label>Role
+        <select name="role">
+          <option value="employee">Employee</option>
+          <option value="it_team">IT team</option>
+          <option value="admin">Admin</option>
+        </select>
+      </label>
+      <label><span id="password-label">Password (min 8 characters)</span>
+        <input type="password" name="password" minlength="8" maxlength="128" autocomplete="new-password">
+      </label>
+    </div>
+    <p id="form-error" class="alert alert-bad" hidden></p>
+    <p id="form-ok" class="alert alert-ok" hidden></p>
+    <button type="submit" id="form-submit" class="btn btn-primary">Add user</button>
+    <button type="button" id="form-cancel" class="btn btn-light" hidden>Cancel</button>
+  </form>
+
+  <section class="card table-card">
+    <div class="page-head"><h2>All users</h2><span id="count" class="muted"></span></div>
+    <form id="user-filters" class="filters">
+      <div class="search-box"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg><input type="search" name="q" placeholder="Search name or email..."></div>
+      <select name="role">
+        <option value="">All roles</option>
+        <option value="employee">Employees</option>
+        <option value="it_team">IT team</option>
+        <option value="admin">Admins</option>
+      </select>
+    </form>
+    <p id="list-error" class="alert alert-bad" hidden></p>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Status</th><th>Created</th><th>Actions</th></tr></thead>
+        <tbody id="user-rows"></tbody>
+      </table>
+    </div>
+  </section>
+</section>
+{% endblock %}
+{% block scripts %}<script src="{{ url_for('static', filename='js/admin.js') }}"></script>{% endblock %}

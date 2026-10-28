@@ -32,6 +32,12 @@ def require_it(user: User = Depends(get_current_user)) -> User:
     return user
 
 
+def require_admin(user: User = Depends(get_current_user)) -> User:
+    if user.role != "admin":
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "Admin access required")
+    return user
+
+
 def require_employee(user: User = Depends(get_current_user)) -> User:
     if user.role != "employee":
         raise HTTPException(status.HTTP_403_FORBIDDEN, "Employee access required")

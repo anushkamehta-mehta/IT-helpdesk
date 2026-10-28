@@ -3,7 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from app.core.config import get_settings
-from app.routers import auth, categories, health, tickets, users
+from app.routers import admin, auth, categories, health, tickets, users
 
 app = FastAPI(title="IT Helpdesk API", version="1.0.0")
 
@@ -35,5 +35,5 @@ if origins:
     )
 
 # All API routes live under /api so Nginx can route /api/* to this service.
-for r in (health.router, auth.router, categories.router, users.router, tickets.router):
+for r in (health.router, auth.router, categories.router, users.router, tickets.router, admin.router):
     app.include_router(r, prefix="/api")

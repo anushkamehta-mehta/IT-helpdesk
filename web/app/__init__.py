@@ -9,9 +9,9 @@ def create_app() -> Flask:
     if not app.config["SECRET_KEY"]:
         raise RuntimeError("FLASK_SECRET_KEY is not set. Copy .env.example to .env and fill it in.")
 
-    from app.blueprints import auth, employee, it_team, tickets
+    from app.blueprints import admin, auth, employee, it_team, tickets
 
-    for module in (auth, employee, it_team, tickets):
+    for module in (admin, auth, employee, it_team, tickets):
         app.register_blueprint(module.bp)
 
     api_base = app.config["API_BASE_URL"]

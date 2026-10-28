@@ -18,7 +18,7 @@ _DUMMY_HASH = hash_password("dummy-password-for-timing")
 
 @router.post("/register", response_model=UserOut, status_code=status.HTTP_201_CREATED)
 def register(data: RegisterRequest, db: Session = Depends(get_db)):
-    """Self-registration. Always creates an employee; IT accounts are created by script."""
+    """Self-registration. Always creates an employee; other roles are created by an admin."""
     email = data.email.strip().lower()
     if db.scalar(select(User).where(User.email == email)):
         raise HTTPException(status.HTTP_409_CONFLICT, "An account with this email already exists")
@@ -36,8 +36,13 @@ def register(data: RegisterRequest, db: Session = Depends(get_db)):
 def login(data: LoginRequest, response: Response, db: Session = Depends(get_db)):
     user = db.scalar(select(User).where(User.email == data.email.strip().lower()))
     password_ok = verify_password(data.password, user.password_hash if user else _DUMMY_HASH)
-    if not user or not password_ok or not user.is_active:
+    if not user or not password_ok:
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Invalid email or password")
+    # Only revealed after a correct password, so it can't be used to probe which emails exist.
+    if not user.is_active:
+        raise HTTPException(
+            status.HTTP_403_FORBIDDEN, "Your account has been blocked by the administrator. Please contact your admin."
+        )
     settings = get_settings()
     response.set_cookie(
         COOKIE_NAME,

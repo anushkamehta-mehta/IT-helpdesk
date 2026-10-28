@@ -12,7 +12,7 @@ def client():
     return create_app().test_client()
 
 
-@pytest.mark.parametrize("path", ["/login", "/register", "/tickets", "/tickets/new", "/tickets/5", "/it/tickets"])
+@pytest.mark.parametrize("path", ["/login", "/register", "/tickets", "/tickets/new", "/tickets/5", "/it/tickets", "/admin"])
 def test_pages_render(client, path):
     r = client.get(path)
     assert r.status_code == 200

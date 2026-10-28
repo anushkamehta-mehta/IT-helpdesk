@@ -28,6 +28,7 @@ def session_factory():
         db.add(Category(name="Hardware"))
         db.add(User(full_name="Ivan IT", email="ivan@acme.com", password_hash=hash_password("password123"), role="it_team"))
         db.add(User(full_name="Priya IT", email="priya@acme.com", password_hash=hash_password("password123"), role="it_team"))
+        db.add(User(full_name="Ada Admin", email="admin@acme.com", password_hash=hash_password("password123"), role="admin"))
         db.commit()
     yield factory
     engine.dispose()

@@ -42,11 +42,14 @@ Use the same host name everywhere (`127.0.0.1` in the URL and in `API_BASE_URL`/
 pip install -r api/requirements.txt -r web/requirements.txt
 ```
 
-### 4. Create the first IT team account
+### 4. Create the first admin account
 ```bash
 cd api
-python -m scripts.create_it_user
+python -m scripts.create_admin
 ```
+Log in as the admin and open **http://localhost:5000/admin** to add employees, IT team members and other admins (no terminal needed after this). Employees can still self-register at `/register`.
+
+Upgrading an existing database? Run `database/migrations/001_add_admin_role.sql` once in MySQL Workbench (as root) first.
 (Optional, for demos) load sample users and tickets:
 ```bash
 python -m scripts.seed_demo

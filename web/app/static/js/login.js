@@ -9,7 +9,7 @@
   // Already logged in? Go straight to the right home page.
   try {
     const user = await api("/auth/me");
-    window.location.href = homeFor(user.role);
+    window.location.href = afterLogin(user.role);
     return;
   } catch (e) {
     /* not logged in */
@@ -24,7 +24,7 @@
     await submitting(form.querySelector("button[type=submit]"), async () => {
       try {
         const user = await api("/auth/login", { method: "POST", body: { email, password } });
-        window.location.href = homeFor(user.role);
+        window.location.href = afterLogin(user.role);
       } catch (e) {
         showMessage(error, e.message);
       }

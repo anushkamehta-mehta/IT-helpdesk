@@ -79,8 +79,27 @@ function formatDate(value) {
   return d.toLocaleString([], { dateStyle: "medium", timeStyle: "short" });
 }
 
+const HOME = { employee: "/tickets", it_team: "/it/tickets", admin: "/admin" };
+const ROLE_LABELS = { employee: "Employee", it_team: "IT team", admin: "Admin" };
+const NAV = {
+  employee: [["/tickets", "My tickets"], ["/tickets/new", "New ticket"]],
+  it_team: [["/it/tickets", "Dashboard"]],
+  admin: [["/admin", "Users"]],
+};
+
 function homeFor(role) {
-  return role === "it_team" ? "/it/tickets" : "/tickets";
+  return HOME[role] || "/tickets";
+}
+
+// After login, return to the page that sent us to /login (same-site paths only), else the role's home.
+function afterLogin(role) {
+  const next = new URLSearchParams(window.location.search).get("next") || "";
+  const allowed = next.startsWith("/") && !next.startsWith("//") && (next !== "/admin" || role === "admin");
+  return allowed && next !== "/login" ? next : homeFor(role);
+}
+
+function roleLabel(role) {
+  return ROLE_LABELS[role] || role;
 }
 
 function showMessage(el, text) {
@@ -91,10 +110,10 @@ function showMessage(el, text) {
 function setupHeader(user) {
   document.getElementById("user-avatar").textContent = initials(user.full_name);
   document.getElementById("user-name").textContent = user.full_name;
-  document.getElementById("user-role").textContent = user.role === "it_team" ? "IT team" : "Employee";
+  document.getElementById("user-role").textContent = roleLabel(user.role);
   document.getElementById("user-box").hidden = false;
   const nav = document.getElementById("nav");
-  const links = user.role === "it_team" ? [["/it/tickets", "Dashboard"]] : [["/tickets", "My tickets"], ["/tickets/new", "New ticket"]];
+  const links = NAV[user.role] || [];
   nav.innerHTML = links
     .map(([href, label]) => `<a href="${href}"${window.location.pathname === href ? ' class="active"' : ""}>${esc(label)}</a>`)
     .join("");
@@ -111,6 +130,23 @@ function setupHeader(user) {
 async function requireUser(role) {
   try {
     const user = await api("/auth/me");
+    if (role === "admin" && user.role !== "admin") {
+      // Don't silently bounce people away from /admin: explain and offer to switch accounts.
+      setupHeader(user);
+      document.querySelector("main").innerHTML = `<section class="card">
+        <h1>Admin access required</h1>
+        <p class="muted">You are logged in as <b>${esc(user.full_name)}</b> (${esc(roleLabel(user.role))}). Only admins can manage users.</p>
+        <button type="button" id="switch-account" class="btn btn-primary">Log in as admin</button>
+        <a class="btn btn-light" href="${homeFor(user.role)}">Back to my dashboard</a></section>`;
+      document.getElementById("switch-account").addEventListener("click", async () => {
+        try {
+          await api("/auth/logout", { method: "POST" });
+        } finally {
+          window.location.href = `/login?next=${encodeURIComponent(window.location.pathname)}`;
+        }
+      });
+      return null;
+    }
     if (role && user.role !== role) {
       window.location.href = homeFor(user.role);
       return null;
@@ -119,7 +155,7 @@ async function requireUser(role) {
     return user;
   } catch (e) {
     if (e.status === 401) {
-      window.location.href = "/login";
+      window.location.href = `/login?next=${encodeURIComponent(window.location.pathname)}`;
       return null;
     }
     document.querySelector("main").innerHTML = `<p class="alert alert-bad">${esc(e.message)}</p>`;
