@@ -14,33 +14,25 @@
   const heroName = document.getElementById("hero-name");
   if (heroName) heroName.textContent = user.full_name.split(" ")[0];
 
-  /* ---------- dashboard cards ---------- */
+  /* ---------- dashboard: pipeline band + overview cards ---------- */
   const pct = (n, total) => (total ? Math.round((n * 100) / total) : 0);
   const plural = (n, word) => `${n} ${word}${n === 1 ? "" : "s"}`;
-
-  const GAUGE_PATH = "M 20 100 A 80 80 0 0 1 180 100";
-  function gauge(segments, total) {
-    const active = segments.filter((s) => s.value > 0);
-    let offset = 0;
-    const gap = active.length > 1 ? 1.4 : 0;
-    const arcs = active
-      .map((s) => {
-        const len = (s.value / total) * 100;
-        const draw = Math.max(len - gap, 0.6);
-        const arc = `<path d="${GAUGE_PATH}" pathLength="100" fill="none" stroke="${s.stroke}" stroke-width="26" stroke-dasharray="${draw} ${100 - draw}" stroke-dashoffset="${-(offset + gap / 2)}"/>`;
-        offset += len;
-        return arc;
-      })
-      .join("");
-    return `<svg viewBox="0 0 200 110" role="img" aria-label="Tickets by status">
-      <defs><pattern id="hatch" width="5" height="5" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
-        <rect width="5" height="5" fill="#b3bccb"/><line x1="0" y1="0" x2="0" y2="5" stroke="#97a2b5" stroke-width="2"/></pattern></defs>
-      <path class="g-track" d="${GAUGE_PATH}" />${arcs}</svg>`;
-  }
+  const IMG = (name) => `/static/img/${name}`;
 
   function bar(colorClass, percent) {
     const w = percent > 0 ? Math.max(percent, 4) : 0;
     return `<div class="bar"><span class="${colorClass}" data-w="${w}"></span></div>`;
+  }
+
+  function feature({ title, icon, num, desc, cls, percent, tags }) {
+    return `<article class="feature">
+      <h3>${esc(title)}</h3>
+      <span class="icon3d"><img src="${IMG(icon)}" alt=""></span>
+      <div class="num">${num}</div>
+      <p class="desc">${esc(desc)}</p>
+      ${bar(cls, percent)}
+      <div class="tags">${tags.map((t) => `<span>${esc(t)}</span>`).join("")}</div>
+    </article>`;
   }
 
   function renderStats(all) {
@@ -50,79 +42,85 @@
     const active = total - st.Closed;
     const unassigned = all.filter((t) => !t.assignee && t.status !== "Closed").length;
     const resolved = pct(st.Closed, total);
-
-    const priorities = [
-      ["High", "c-orange"],
-      ["Medium", "c-navy"],
-      ["Low", "c-slate"],
-    ].map(([name, cls]) => ({ name, cls, n: all.filter((t) => t.status !== "Closed" && t.priority === name).length }));
+    const byPriority = (p) => all.filter((t) => t.status !== "Closed" && t.priority === p).length;
 
     const segments = [
-      { label: "Open", value: st.Open, stroke: "#ff5a1f", cls: "c-orange" },
-      { label: "Assigned", value: st.Assigned, stroke: "#1b2a3d", cls: "c-navy" },
-      { label: "In Progress", value: st["In Progress"], stroke: "url(#hatch)", cls: "c-slate" },
-      { label: "Closed", value: st.Closed, stroke: "#dfe3ea", cls: "c-light" },
+      { label: "Open", value: st.Open, cls: "c-open",
+        text: isIT ? "New requests waiting to be triaged." : "Received by IT, waiting to be picked up." },
+      { label: "Assigned", value: st.Assigned, cls: "c-assigned",
+        text: isIT ? "Owned by a team member, not started yet." : "An IT team member owns your request." },
+      { label: "In Progress", value: st["In Progress"], cls: "c-progress",
+        text: isIT ? "Actively being worked on." : "Being worked on now. Watch the comments." },
+      { label: "Closed", value: st.Closed, cls: "c-closed",
+        text: isIT ? "Resolved with notes on record." : "Resolved, with notes on what was done." },
     ];
 
     const hero = document.getElementById("hero-sub");
     if (hero) {
       hero.textContent = isIT
-        ? `${plural(active, "active ticket")}, ${unassigned} waiting for an assignee.`
+        ? `${plural(active, "active ticket")} in the queue, ${unassigned} waiting for an assignee.`
         : active
-        ? `You have ${plural(active, "active ticket")} with IT.`
-        : "No active tickets. Create one if something needs fixing.";
+        ? `You have ${plural(active, "active ticket")} with IT. We'll keep you posted at every step.`
+        : "No active tickets. Raise one whenever something needs fixing.";
     }
 
-    statsBox.innerHTML = `
-      <div class="card card-gauge">
-        <div class="card-title"><span class="icon-circle">${ICONS.flag}</span>${isIT ? "Tickets by status" : "My tickets by status"}</div>
-        <div class="gauge">${gauge(segments, total)}
-          <div class="gauge-center"><strong>${total}</strong><span>Total tickets</span></div></div>
-        <ul class="legend">${segments.map((s) => `<li><i class="dot ${s.cls}"></i>${esc(s.label)} <b>${s.value}</b></li>`).join("")}</ul>
-      </div>
+    const cta = isIT
+      ? `<article class="cta-card"><h3>Pick up the unassigned queue now.</h3>
+           <img src="${IMG("blob-cushion-green.svg")}" alt="">
+           <button type="button" class="btn btn-arrow" data-unassigned>Show unassigned <span class="arr">${ICONS.arrowRight}</span></button></article>`
+      : `<article class="cta-card"><h3>Something broken? Raise a ticket now.</h3>
+           <img src="${IMG("blob-cushion-green.svg")}" alt="">
+           <a class="btn btn-arrow" href="/tickets/new">New ticket <span class="arr">${ICONS.arrowRight}</span></a></article>`;
 
-      <div class="card card-work">
-        <div class="card-title"><span class="icon-circle">${ICONS.flag}</span>${isIT ? "Workload" : "Progress"}</div>
-        <div class="work">
-          <div>
+    statsBox.innerHTML = `
+      <div class="band">
+        <h2>${isIT ? "Transforming IT, one ticket at a time" : "Your requests, one step at a time"}</h2>
+        <p class="band-sub">${isIT
+          ? "Every request moves through the same four stages. Here is where the whole queue stands right now."
+          : "Every request moves through four stages. Here is where yours stand right now."}</p>
+        <div class="band-grid">
+          <div class="pulse-card">
+            <div class="float"><img src="${IMG("robot.svg")}" alt=""><div>${resolved}% resolved<small>of all tickets</small></div></div>
             <div class="big-number">${total}</div>
-            <div class="lbl">${isIT ? "Received" : "Submitted"}</div>
-            <button type="button" class="pill-btn" data-scroll="ticket-list">Details</button>
+            <div class="lbl">${isIT ? "Tickets received" : "Tickets submitted"}</div>
+            <div class="stack-bar" role="img" aria-label="Tickets by status">${segments
+              .map((s) => `<span class="${s.cls}" data-w="${pct(s.value, total)}" title="${esc(s.label)}: ${s.value}"></span>`)
+              .join("")}</div>
+            <ul class="legend">${segments.map((s) => `<li><i class="dot ${s.cls}"></i>${esc(s.label)}<b>${s.value}</b></li>`).join("")}</ul>
           </div>
-          <div>
-            <div class="mini">
-              <div class="mini-top"><b>${st.Closed}</b><small>closed</small></div>
-              ${bar("c-navy", resolved)}
-              <span class="chip chip-green">${resolved}% resolved</span>
-            </div>
-            <div class="mini">
-              <div class="mini-top"><b>${unassigned}</b><small>${isIT ? "unassigned" : "awaiting assignment"}</small></div>
-              ${bar("c-orange", pct(unassigned, active))}
-              <span class="chip chip-pink">${isIT ? "needs an owner" : "in the queue"}</span>
-            </div>
-          </div>
+          <ol class="steps">${segments
+            .map((s, i) => `<li class="${s.value ? "on" : ""}"><span class="step-no">Step ${i + 1}</span>
+              <div class="step-name">${esc(s.label)}<b>${s.value}</b></div><p>${esc(s.text)}</p></li>`)
+            .join("")}</ol>
         </div>
       </div>
 
-      <div class="card card-tall">
-        <div class="big-number">${active}<span class="arrow-btn">${ICONS.arrowUpRight}</span></div>
-        <div class="sub-row"><span>Active tickets</span><button type="button" class="pill-btn" data-scroll="ticket-list">Details</button></div>
-        ${priorities
-          .map(
-            (p) => `<div class="stat-row">
-              <div class="stat-label"><i class="tick ${p.cls}"></i>${p.name} priority</div>
-              ${bar(p.cls, pct(p.n, active))}
-              <div class="stat-meta"><b>${pct(p.n, active)}%</b> &middot; ${plural(p.n, "ticket")}</div>
-            </div>`
-          )
-          .join("")}
+      <div class="section-title"><span class="kicker">At a glance</span><h2>Overview</h2></div>
+      <div class="features">
+        ${feature({ title: "High priority", icon: "blob-flower-pink.svg", num: byPriority("High"), cls: "c-high",
+          desc: "Active tickets that are blocking work.", percent: pct(byPriority("High"), active), tags: [`${pct(byPriority("High"), active)}% of active`, "Urgent"] })}
+        ${feature({ title: "Medium priority", icon: "blob-flower-violet.svg", num: byPriority("Medium"), cls: "c-violet",
+          desc: "Active tickets that need attention soon.", percent: pct(byPriority("Medium"), active), tags: [`${pct(byPriority("Medium"), active)}% of active`, "Standard"] })}
+        ${feature({ title: "Low priority", icon: "blob-clover-green.svg", num: byPriority("Low"), cls: "c-low",
+          desc: "Active tickets with a workaround in place.", percent: pct(byPriority("Low"), active), tags: [`${pct(byPriority("Low"), active)}% of active`, "Routine"] })}
+        ${feature({ title: "Resolved", icon: "blob-donut.svg", num: st.Closed, cls: "c-low",
+          desc: isIT ? "Tickets closed with resolution notes." : "Your tickets that IT has closed.", percent: resolved, tags: [`${resolved}% resolved`, plural(total, "ticket")] })}
+        ${feature({ title: "Unassigned", icon: "blob-spheres.svg", num: unassigned, cls: "c-peach",
+          desc: isIT ? "Active tickets still needing an owner." : "Waiting for an IT team member.", percent: pct(unassigned, active), tags: [isIT ? "Needs an owner" : "In the queue"] })}
+        ${cta}
       </div>`;
 
     // Bar widths are set through the CSSOM (inline style attributes are blocked by our CSP).
     statsBox.querySelectorAll("[data-w]").forEach((el) => requestAnimationFrame(() => (el.style.width = el.dataset.w + "%")));
-    statsBox.querySelectorAll("[data-scroll]").forEach((btn) =>
-      btn.addEventListener("click", () => document.getElementById(btn.dataset.scroll).scrollIntoView({ behavior: "smooth" }))
-    );
+    const showUnassigned = statsBox.querySelector("[data-unassigned]");
+    if (showUnassigned) {
+      showUnassigned.addEventListener("click", () => {
+        form.reset();
+        form.elements["assigned"].value = "unassigned";
+        load();
+        document.getElementById("ticket-list").scrollIntoView({ behavior: "smooth" });
+      });
+    }
   }
 
   async function loadStats() {

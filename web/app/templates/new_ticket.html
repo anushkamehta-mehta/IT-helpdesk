@@ -2,24 +2,39 @@
 {% block title %}New ticket - IT Helpdesk{% endblock %}
 {% block content %}
 <a class="back" href="{{ url_for('employee.my_tickets') }}">&larr; Back to my tickets</a>
-<section class="card">
-  <h1>Create a ticket</h1>
-  <p class="muted">Describe the problem and we'll route it to the IT team.</p>
-  <form id="ticket-form" novalidate>
-    <label>Title <input type="text" name="title" maxlength="200" required></label>
-    <div class="grid">
-      <label>Category
-        <select name="category_id" required><option value="">Select a category...</option></select>
-      </label>
-      <label>Priority
-        <select name="priority"><option>Low</option><option selected>Medium</option><option>High</option></select>
-      </label>
-    </div>
-    <label>Description <textarea name="description" rows="6" required></textarea></label>
-    <p id="error" class="alert alert-bad" hidden></p>
-    <button type="submit" class="btn btn-primary">Submit ticket</button>
-    <a class="btn btn-light" href="{{ url_for('employee.my_tickets') }}">Cancel</a>
-  </form>
-</section>
+<div class="split">
+  <section class="card">
+    <span class="kicker">New request</span>
+    <h1>Create a ticket</h1>
+    <p class="muted">Describe the problem and we'll route it to the IT team.</p>
+    <form id="ticket-form" novalidate>
+      <label>Title <input type="text" name="title" maxlength="200" placeholder="e.g. Laptop won't connect to office Wi-Fi" required></label>
+      <div class="grid">
+        <label>Category
+          <select name="category_id" required><option value="">Select a category...</option></select>
+        </label>
+        <label>Priority
+          <select name="priority"><option>Low</option><option selected>Medium</option><option>High</option></select>
+        </label>
+      </div>
+      <label>Description <textarea name="description" rows="7" placeholder="What happened, when it started, any error message you saw..." required></textarea></label>
+      <p id="error" class="alert alert-bad" hidden></p>
+      <button type="submit" class="btn btn-primary">Submit ticket</button>
+      <a class="btn btn-light" href="{{ url_for('employee.my_tickets') }}">Cancel</a>
+    </form>
+  </section>
+
+  <aside class="side-band">
+    <img class="deco" src="{{ url_for('static', filename='img/blob-flower-violet.svg') }}" alt="">
+    <span class="kicker light">How it works</span>
+    <h2>Fixing IT, one step at a time</h2>
+    <ol class="steps">
+      <li class="on"><span class="step-no">Step 1</span><div class="step-name">Submit</div><p>Tell us what's wrong. A clear title and the exact error help most.</p></li>
+      <li><span class="step-no">Step 2</span><div class="step-name">Assigned</div><p>The IT team picks it up and assigns an owner.</p></li>
+      <li><span class="step-no">Step 3</span><div class="step-name">In progress</div><p>Follow updates and reply in the comment thread.</p></li>
+      <li><span class="step-no">Step 4</span><div class="step-name">Resolved</div><p>The ticket closes with resolution notes for your records.</p></li>
+    </ol>
+  </aside>
+</div>
 {% endblock %}
 {% block scripts %}<script src="{{ url_for('static', filename='js/new_ticket.js') }}"></script>{% endblock %}

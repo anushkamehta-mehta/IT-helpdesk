@@ -2,26 +2,28 @@
 {% block title %}Log in - IT Helpdesk{% endblock %}
 {% block shell %}
 <main class="auth">
-  <section class="hero hero-xl">
+  <section class="auth-hero shapes">
+    <a class="logo" href="/"><img src="{{ url_for('static', filename='img/logo.svg') }}" alt=""><span>helpdesk</span></a>
     <div>
-      <h1>Fix it faster. Track every request.</h1>
-      <p>Raise IT tickets in seconds and follow them from open to resolved.</p>
+      <span class="kicker">Internal IT support</span>
+      <h1>Reliable &amp;<img class="mascot" src="{{ url_for('static', filename='img/robot.svg') }}" alt=""> Secure <span class="arrow-line" aria-hidden="true"></span>IT Support.</h1>
+      <p>Raise a ticket in seconds and follow it from open to resolved &mdash; no chasing, no lost emails.</p>
     </div>
-    <div class="float-pill">
-        <span class="avatar sq">HD</span>
-        <div class="txt"><strong>IT Helpdesk</strong><small>Internal support portal</small></div>
-        <span class="vr"></span>
-        <span class="icon-btn" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg></span>
-        <a class="icon-btn" href="{{ url_for('auth.register') }}" title="Create an account" aria-label="Create an account"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></svg></a>
-      </div>
+    <div class="trust">
+      <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>Secure sign-in</span>
+      <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>Live status tracking</span>
+      <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>Talk to IT in-thread</span>
+    </div>
+    <div class="hero-art"><img src="{{ url_for('static', filename='img/hero-illustration.svg') }}" alt="Helpdesk dashboard illustration"></div>
   </section>
   <section class="card auth-card">
-    <h2>Welcome back</h2>
-    <p class="lead">Log in to your helpdesk account.</p>
+    <span class="kicker">Welcome back</span>
+    <h2>Log in</h2>
+    <p class="lead">Use your work email to access the helpdesk.</p>
     <p id="notice" class="alert alert-ok" hidden></p>
     <form id="login-form" novalidate>
-      <label>Email <input type="email" name="email" autocomplete="username" required></label>
-      <label>Password <input type="password" name="password" autocomplete="current-password" required></label>
+      <label>Email <input type="email" name="email" autocomplete="username" placeholder="you@company.com" required></label>
+      <label>Password <input type="password" name="password" autocomplete="current-password" placeholder="••••••••" required></label>
       <p id="error" class="alert alert-bad" hidden></p>
       <button type="submit" class="btn btn-primary btn-block">Log in</button>
     </form>

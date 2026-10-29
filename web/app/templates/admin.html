@@ -2,11 +2,19 @@
 {% block title %}User management - IT Helpdesk{% endblock %}
 {% block content %}
 <section id="admin-page">
-  <div class="hero">
+  <div class="hero shapes compact">
     <div>
-      <h1>User management</h1>
+      <span class="kicker">Administration</span>
+      <h1>User <span class="arrow-line" aria-hidden="true"></span><em>management</em></h1>
       <p id="hero-sub">Add employees, IT team members and admins, and manage their access.</p>
     </div>
+    <div class="hero-art"><img src="{{ url_for('static', filename='img/robot.svg') }}" alt=""></div>
+  </div>
+
+  <div class="admin-grid">
+    <div class="mini-stat"><span class="icon3d"><img src="{{ url_for('static', filename='img/blob-flower-violet.svg') }}" alt=""></span><div><b id="n-employee">&ndash;</b><span>Employees</span></div></div>
+    <div class="mini-stat"><span class="icon3d"><img src="{{ url_for('static', filename='img/blob-clover-green.svg') }}" alt=""></span><div><b id="n-it">&ndash;</b><span>IT team</span></div></div>
+    <div class="mini-stat"><span class="icon3d"><img src="{{ url_for('static', filename='img/blob-flower-pink.svg') }}" alt=""></span><div><b id="n-admin">&ndash;</b><span>Admins</span></div></div>
   </div>
 
   <form id="user-form" class="card" novalidate>

@@ -2,17 +2,20 @@
 {% block title %}My tickets - IT Helpdesk{% endblock %}
 {% block content %}
 <section id="ticket-page" data-mode="employee">
-  <div class="hero">
+  <div class="hero shapes">
     <div>
-      <h1>Hi <span id="hero-name"></span>, need a hand from IT?</h1>
+      <span class="kicker">Hi <span id="hero-name"></span>, welcome back</span>
+      <h1>Need a hand <span class="arrow-line" aria-hidden="true"></span>from <em>IT</em>?</h1>
       <p id="hero-sub">Loading your tickets...</p>
+      <div class="hero-actions">
+        <a class="btn btn-primary btn-arrow" href="{{ url_for('employee.new_ticket') }}">New ticket <span class="arr"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></span></a>
+        <a class="btn btn-light" href="#ticket-list">View my tickets</a>
+      </div>
     </div>
-    <div class="hero-actions">
-      <a class="btn btn-white" href="{{ url_for('employee.new_ticket') }}">+ New ticket</a>
-    </div>
+    <div class="hero-art"><img src="{{ url_for('static', filename='img/hero-illustration.svg') }}" alt=""></div>
   </div>
 
-  <section id="stats" class="stats-grid"></section>
+  <section id="stats"></section>
 
   <section id="ticket-list" class="card table-card">
     <div class="page-head"><h2>My tickets</h2><span id="count" class="muted"></span></div>

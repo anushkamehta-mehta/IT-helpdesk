@@ -1,0 +1,81 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 560 470" font-family="DM Sans, Segoe UI, Arial, sans-serif">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ffd9c4"/><stop offset="1" stop-color="#ffb995"/></linearGradient>
+    <linearGradient id="scr" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2c1263"/><stop offset="1" stop-color="#1a0a3f"/></linearGradient>
+    <linearGradient id="base" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#d9d2ee"/><stop offset="1" stop-color="#a99cd1"/></linearGradient>
+    <linearGradient id="vio" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#9b82ff"/><stop offset="1" stop-color="#5b2fd6"/></linearGradient>
+    <radialGradient id="ball" cx="35%" cy="30%" r="75%"><stop offset="0" stop-color="#ece6ff"/><stop offset=".5" stop-color="#9c86ff"/><stop offset="1" stop-color="#5a37d8"/></radialGradient>
+    <radialGradient id="ballp" cx="35%" cy="30%" r="75%"><stop offset="0" stop-color="#ffe3ec"/><stop offset=".5" stop-color="#ff9ebd"/><stop offset="1" stop-color="#e45487"/></radialGradient>
+    <filter id="sh" x="-20%" y="-20%" width="140%" height="150%"><feDropShadow dx="0" dy="14" stdDeviation="14" flood-color="#2a0e5c" flood-opacity=".22"/></filter>
+    <filter id="sh2" x="-20%" y="-20%" width="140%" height="160%"><feDropShadow dx="0" dy="8" stdDeviation="8" flood-color="#2a0e5c" flood-opacity=".18"/></filter>
+  </defs>
+
+  <!-- backdrop shapes -->
+  <path d="M120 40 L470 10 L540 300 L210 420 Z" fill="url(#bg)" opacity=".9"/>
+  <circle cx="455" cy="360" r="70" fill="#e9e1ff"/>
+
+  <!-- laptop -->
+  <g filter="url(#sh)">
+    <rect x="96" y="118" width="360" height="232" rx="18" fill="url(#scr)"/>
+    <rect x="110" y="132" width="332" height="204" rx="10" fill="#f7f4ff"/>
+    <!-- app chrome -->
+    <rect x="110" y="132" width="76" height="204" rx="10" fill="#efe9ff"/>
+    <circle cx="130" cy="152" r="9" fill="#6b46e6"/>
+    <rect x="124" y="176" width="48" height="8" rx="4" fill="#6b46e6"/>
+    <rect x="124" y="194" width="40" height="8" rx="4" fill="#cfc4f5"/>
+    <rect x="124" y="212" width="44" height="8" rx="4" fill="#cfc4f5"/>
+    <rect x="124" y="230" width="36" height="8" rx="4" fill="#cfc4f5"/>
+    <!-- stat tiles -->
+    <rect x="198" y="146" width="72" height="50" rx="10" fill="#fff"/>
+    <rect x="278" y="146" width="72" height="50" rx="10" fill="#fff"/>
+    <rect x="358" y="146" width="72" height="50" rx="10" fill="#2a0e5c"/>
+    <text x="208" y="168" font-size="16" font-weight="700" fill="#1d1238">128</text><rect x="208" y="178" width="40" height="6" rx="3" fill="#d9d2ee"/>
+    <text x="288" y="168" font-size="16" font-weight="700" fill="#1d1238">96%</text><rect x="288" y="178" width="34" height="6" rx="3" fill="#bdeed3"/>
+    <text x="368" y="168" font-size="16" font-weight="700" fill="#fff">12</text><rect x="368" y="178" width="38" height="6" rx="3" fill="#ffb995"/>
+    <!-- rows -->
+    <g>
+      <rect x="198" y="208" width="232" height="26" rx="8" fill="#fff"/><circle cx="212" cy="221" r="6" fill="#ff9ebd"/><rect x="224" y="217" width="90" height="8" rx="4" fill="#d9d2ee"/><rect x="380" y="215" width="40" height="12" rx="6" fill="#ffe1d3"/>
+      <rect x="198" y="240" width="232" height="26" rx="8" fill="#fff"/><circle cx="212" cy="253" r="6" fill="#9c86ff"/><rect x="224" y="249" width="110" height="8" rx="4" fill="#d9d2ee"/><rect x="380" y="247" width="40" height="12" rx="6" fill="#e6defc"/>
+      <rect x="198" y="272" width="232" height="26" rx="8" fill="#fff"/><circle cx="212" cy="285" r="6" fill="#5fd39a"/><rect x="224" y="281" width="76" height="8" rx="4" fill="#d9d2ee"/><rect x="380" y="279" width="40" height="12" rx="6" fill="#d6f5e5"/>
+      <rect x="198" y="304" width="232" height="22" rx="8" fill="#fff"/><circle cx="212" cy="315" r="6" fill="#ffc56e"/><rect x="224" y="311" width="96" height="8" rx="4" fill="#d9d2ee"/>
+    </g>
+    <!-- base -->
+    <path d="M60 350 H492 L470 372 H82 Z" fill="url(#base)"/>
+    <rect x="236" y="350" width="80" height="7" rx="3.5" fill="#8f82bd"/>
+  </g>
+
+  <!-- floating chart card -->
+  <g filter="url(#sh2)" transform="translate(388 52)">
+    <rect width="150" height="112" rx="18" fill="#fff"/>
+    <text x="16" y="26" font-size="12" font-weight="700" fill="#1d1238">Resolved</text>
+    <text x="104" y="26" font-size="11" fill="#7d7398">week</text>
+    <g fill="url(#vio)">
+      <rect x="18" y="62" width="10" height="30" rx="4"/><rect x="36" y="48" width="10" height="44" rx="4"/><rect x="54" y="70" width="10" height="22" rx="4"/>
+      <rect x="72" y="40" width="10" height="52" rx="4"/><rect x="90" y="56" width="10" height="36" rx="4"/>
+    </g>
+    <rect x="108" y="34" width="10" height="58" rx="4" fill="#ff9a6e"/>
+    <text x="104" y="106" font-size="11" font-weight="700" fill="#5b2fd6">+24%</text>
+  </g>
+
+  <!-- floating resolved toast -->
+  <g filter="url(#sh2)" transform="translate(20 300)">
+    <rect width="196" height="62" rx="18" fill="#fff"/>
+    <circle cx="31" cy="31" r="17" fill="#d6f5e5"/>
+    <path d="M23 31l6 6 11-12" fill="none" stroke="#16804f" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/>
+    <text x="58" y="27" font-size="13" font-weight="700" fill="#1d1238">Ticket #1042</text>
+    <text x="58" y="45" font-size="11.5" fill="#7d7398">Resolved in 2h 14m</text>
+  </g>
+
+  <!-- floating assignee chip -->
+  <g filter="url(#sh2)" transform="translate(30 70)">
+    <rect width="176" height="54" rx="27" fill="#2a0e5c"/>
+    <circle cx="27" cy="27" r="18" fill="#ffb995"/><text x="27" y="32" text-anchor="middle" font-size="13" font-weight="700" fill="#2a0e5c">IT</text>
+    <text x="54" y="24" font-size="12" font-weight="700" fill="#fff">Assigned to IT</text>
+    <text x="54" y="40" font-size="10.5" fill="#c9bcff">Network · High priority</text>
+  </g>
+
+  <!-- 3D balls -->
+  <circle cx="486" cy="226" r="24" fill="url(#ball)"/>
+  <circle cx="60" cy="214" r="15" fill="url(#ballp)"/>
+  <circle cx="520" cy="410" r="12" fill="url(#ballp)"/>
+</svg>

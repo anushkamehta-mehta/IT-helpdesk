@@ -31,6 +31,13 @@
       ["Last updated", esc(formatDate(t.updated_at))],
       ["Closed", t.closed_at ? esc(formatDate(t.closed_at)) : "-"],
     ].map(([k, v]) => `<div><dt>${esc(k)}</dt><dd>${v}</dd></div>`).join("");
+    // Progress tracker: Open -> Assigned -> In Progress -> Closed
+    const order = ["Open", "Assigned", "In Progress", "Closed"];
+    const reached = order.indexOf(t.status);
+    $("ticket-track").querySelectorAll("li").forEach((li, i) => {
+      li.classList.toggle("done", i <= reached);
+      li.classList.toggle("current", i === reached);
+    });
     $("ticket-description").textContent = t.description;
     $("resolution-box").hidden = !(t.status === "Closed" && t.resolution_notes);
     $("ticket-resolution").textContent = t.resolution_notes || "";

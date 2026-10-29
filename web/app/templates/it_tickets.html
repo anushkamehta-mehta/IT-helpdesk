@@ -2,14 +2,19 @@
 {% block title %}Support dashboard - IT Helpdesk{% endblock %}
 {% block content %}
 <section id="ticket-page" data-mode="it">
-  <div class="hero">
+  <div class="hero shapes">
     <div>
-      <h1>Support dashboard</h1>
+      <span class="kicker">Support dashboard</span>
+      <h1>Managed <span class="arrow-line" aria-hidden="true"></span>IT support, <em>at a glance.</em></h1>
       <p id="hero-sub">Loading the queue...</p>
+      <div class="hero-actions">
+        <a class="btn btn-primary btn-arrow" href="#ticket-list">Open the queue <span class="arr"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></span></a>
+      </div>
     </div>
+    <div class="hero-art"><img src="{{ url_for('static', filename='img/hero-illustration.svg') }}" alt=""></div>
   </div>
 
-  <section id="stats" class="stats-grid"></section>
+  <section id="stats"></section>
 
   <section id="ticket-list" class="card table-card">
     <div class="page-head"><h2>All tickets</h2><span id="count" class="muted"></span></div>

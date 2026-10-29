@@ -41,6 +41,9 @@
     $("count").textContent = plural(shown.length, "user");
     const counts = { employee: 0, it_team: 0, admin: 0 };
     for (const u of users) counts[u.role] += 1;
+    $("n-employee").textContent = counts.employee;
+    $("n-it").textContent = counts.it_team;
+    $("n-admin").textContent = counts.admin;
     $("hero-sub").textContent = `${plural(counts.employee, "employee")}, ${plural(counts.it_team, "IT team member")} and ${plural(counts.admin, "admin")}.`;
   }
 

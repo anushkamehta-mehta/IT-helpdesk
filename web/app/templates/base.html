@@ -4,14 +4,17 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{% block title %}IT Helpdesk{% endblock %}</title>
+  <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='img/logo.svg') }}">
+  <link rel="preload" href="{{ url_for('static', filename='fonts/fraunces-latin-wght-normal.woff2') }}" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="{{ url_for('static', filename='fonts/dm-sans-latin-wght-normal.woff2') }}" as="font" type="font/woff2" crossorigin>
   <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
 </head>
 <body data-api-base="{{ api_base_url }}">
 {% block shell %}
   <header class="topbar">
     <a class="logo" href="/">
-      <span class="logo-mark"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg></span>
-      <span>HelpDesk</span>
+      <img src="{{ url_for('static', filename='img/logo.svg') }}" alt="">
+      <span>helpdesk</span>
     </a>
     <nav id="nav" class="nav"></nav>
     <div id="user-box" class="user-chip" hidden>
@@ -23,6 +26,7 @@
     </div>
   </header>
   <main class="container">{% block content %}{% endblock %}</main>
+  <footer class="site-foot"><span>IT Helpdesk &middot; Internal support portal</span><span>Raise it. Track it. Resolved.</span></footer>
 {% endblock %}
   <script src="{{ url_for('static', filename='js/common.js') }}"></script>
   {% block scripts %}{% endblock %}

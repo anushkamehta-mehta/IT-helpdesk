@@ -11,6 +11,9 @@
         <div class="title-row"><h1 id="ticket-title"></h1></div>
         <div><span id="badge-status"></span> <span id="badge-priority"></span></div>
       </div>
+      <ol id="ticket-track" class="track" aria-label="Ticket progress">
+        <li data-step="Open">Open</li><li data-step="Assigned">Assigned</li><li data-step="In Progress">In progress</li><li data-step="Closed">Closed</li>
+      </ol>
       <dl id="ticket-meta" class="meta"></dl>
       <h3>Description</h3>
       <p id="ticket-description" class="pre"></p>
@@ -60,6 +63,7 @@
     </form>
 
     <div class="card">
+      <span class="kicker">Conversation</span>
       <h2>Comments</h2>
       <div id="comments"></div>
       <form id="comment-form" novalidate>
