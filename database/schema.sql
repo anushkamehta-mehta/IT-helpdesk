@@ -24,7 +24,7 @@ CREATE TABLE IF NOT EXISTS tickets (
   description      TEXT NOT NULL,
   category_id      INT NOT NULL,
   priority         ENUM('Low','Medium','High') NOT NULL DEFAULT 'Medium',
-  status           ENUM('Open','Assigned','In Progress','Closed') NOT NULL DEFAULT 'Open',
+  status           ENUM('Open','Assigned','In Progress','On Hold','Resolved','Closed') NOT NULL DEFAULT 'Open',
   created_by       INT NOT NULL,
   assigned_to      INT NULL,
   resolution_notes TEXT NULL,

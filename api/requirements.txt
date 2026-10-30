@@ -7,3 +7,4 @@ pydantic-settings
 email-validator
 argon2-cffi
 PyJWT
+jinja2

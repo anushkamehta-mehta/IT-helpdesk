@@ -1,12 +1,12 @@
 from typing import Literal
 
-from fastapi import APIRouter, Depends, Query, status
+from fastapi import APIRouter, BackgroundTasks, Depends, Query, status
 from sqlalchemy.orm import Session
 
 from app.db.session import get_db
 from app.dependencies import get_current_user, require_employee
 from app.models import User
-from app.schemas.ticket import CommentCreate, TicketCreate, TicketDetail, TicketOut, TicketUpdate
+from app.schemas.ticket import CommentCreate, Status, TicketCreate, TicketDetail, TicketOut, TicketUpdate
 from app.services import tickets as service
 
 router = APIRouter(prefix="/tickets", tags=["tickets"])
@@ -20,7 +20,7 @@ def create_ticket(data: TicketCreate, db: Session = Depends(get_db), user: User 
 @router.get("", response_model=list[TicketOut])
 def list_tickets(
     q: str | None = Query(None, max_length=200),
-    status_: Literal["Open", "Assigned", "In Progress", "Closed"] | None = Query(None, alias="status"),
+    status_: Status | None = Query(None, alias="status"),
     priority: Literal["Low", "Medium", "High"] | None = None,
     category_id: int | None = None,
     assigned_to: int | None = None,
@@ -43,16 +43,35 @@ def get_ticket(ticket_id: int, db: Session = Depends(get_db), user: User = Depen
 
 @router.patch("/{ticket_id}", response_model=TicketDetail)
 def update_ticket(
-    ticket_id: int, data: TicketUpdate, db: Session = Depends(get_db), user: User = Depends(get_current_user)
+    ticket_id: int,
+    data: TicketUpdate,
+    background_tasks: BackgroundTasks,
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
 ):
-    """Owners edit ticket details; IT can also manage status, assignee and resolution."""
-    return TicketDetail.model_validate(service.update_ticket(db, user, ticket_id, data))
+    """Owners edit ticket details; IT can also manage status, assignee and resolution.
+    Moving a ticket to Resolved emails the requester."""
+    return TicketDetail.model_validate(service.update_ticket(db, user, ticket_id, data, background_tasks))
 
 
 @router.delete("/{ticket_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_ticket(ticket_id: int, db: Session = Depends(get_db), user: User = Depends(get_current_user)):
     """Owners can delete their own tickets; IT can delete any ticket."""
     service.delete_ticket(db, user, ticket_id)
+
+
+@router.post("/{ticket_id}/close", response_model=TicketDetail)
+def close_ticket(ticket_id: int, db: Session = Depends(get_db), user: User = Depends(get_current_user)):
+    """Only the employee who raised the ticket can close it."""
+    return TicketDetail.model_validate(service.close_ticket(db, user, ticket_id))
+
+
+@router.post("/{ticket_id}/reopen", response_model=TicketDetail)
+def reopen_ticket(
+    ticket_id: int, data: CommentCreate, db: Session = Depends(get_db), user: User = Depends(get_current_user)
+):
+    """The owner rejects a Resolved ticket; the comment says what still needs to change."""
+    return TicketDetail.model_validate(service.reopen_ticket(db, user, ticket_id, data))
 
 
 @router.post("/{ticket_id}/comments", response_model=TicketDetail, status_code=status.HTTP_201_CREATED)

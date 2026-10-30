@@ -1,19 +1,24 @@
 """Ticket business rules: visibility, workflow transitions, comments."""
 from datetime import datetime, timezone
 
-from fastapi import HTTPException, status
+from fastapi import BackgroundTasks, HTTPException, status
 from sqlalchemy import or_, select
 from sqlalchemy.orm import Session, joinedload, selectinload
 
 from app.models import Category, Comment, Ticket, User
 from app.schemas.ticket import CommentCreate, TicketCreate, TicketUpdate
+from app.services import notifications
 
-# Workflow: Open -> Assigned -> In Progress -> Closed. A ticket may also be closed
-# directly (e.g. duplicate or resolved on first contact); closing needs resolution notes.
-ALLOWED_TRANSITIONS = {
-    "Open": {"Assigned", "Closed"},
-    "Assigned": {"In Progress", "Closed"},
-    "In Progress": {"Closed"},
+# Workflow: Open -> Assigned -> In Progress / On Hold -> Resolved -> Closed.
+# * Assigning a ticket (or reassigning it to someone else) always sets it to Assigned.
+# * IT moves it between In Progress, On Hold and Resolved; resolving needs resolution notes.
+# * Only the employee who raised it can close it, or send a Resolved ticket back with a comment.
+IT_TRANSITIONS = {
+    "Open": set(),  # assign it first
+    "Assigned": {"In Progress", "On Hold", "Resolved"},
+    "In Progress": {"On Hold", "Resolved"},
+    "On Hold": {"In Progress", "Resolved"},
+    "Resolved": {"In Progress"},
     "Closed": set(),
 }
 
@@ -92,12 +97,15 @@ def create_ticket(db: Session, user: User, data: TicketCreate) -> Ticket:
 IT_ONLY_FIELDS = ("status", "assigned_to", "resolution_notes")
 
 
-def update_ticket(db: Session, user: User, ticket_id: int, data: TicketUpdate) -> Ticket:
+def update_ticket(
+    db: Session, user: User, ticket_id: int, data: TicketUpdate, background_tasks: BackgroundTasks | None = None
+) -> Ticket:
     ticket = get_ticket(db, user, ticket_id)  # enforces employee ownership
     if user.role != "it_team" and any(getattr(data, f) is not None for f in IT_ONLY_FIELDS):
         raise HTTPException(status.HTTP_403_FORBIDDEN, "Only the IT team can change status, assignee or resolution notes")
     if ticket.status == "Closed":
         raise HTTPException(status.HTTP_409_CONFLICT, "Closed tickets cannot be modified")
+    previous_status = ticket.status
 
     if data.title is not None:
         ticket.title = data.title
@@ -118,24 +126,52 @@ def update_ticket(db: Session, user: User, ticket_id: int, data: TicketUpdate) -
         assignee = db.get(User, data.assigned_to)
         if assignee is None or assignee.role != "it_team" or not assignee.is_active:
             raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, "Assignee must be an active IT team member")
-        ticket.assigned_to = assignee.id
-        if ticket.status == "Open" and data.status is None:
+        if assignee.id != ticket.assigned_to:
+            ticket.assigned_to = assignee.id
             ticket.status = "Assigned"
 
     if data.status is not None and data.status != ticket.status:
-        if data.status not in ALLOWED_TRANSITIONS[ticket.status]:
+        if data.status not in IT_TRANSITIONS[ticket.status]:
+            hint = " (assign it to someone first)" if ticket.status == "Open" else ""
             raise HTTPException(
                 status.HTTP_422_UNPROCESSABLE_ENTITY,
-                f"Cannot change status from {ticket.status} to {data.status}",
+                f"Cannot change status from {ticket.status} to {data.status}{hint}",
             )
-        if data.status in ("Assigned", "In Progress") and ticket.assigned_to is None:
-            raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, "Assign the ticket to someone first")
-        if data.status == "Closed":
-            if not (ticket.resolution_notes or "").strip():
-                raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, "Resolution notes are required to close a ticket")
-            ticket.closed_at = datetime.now(timezone.utc).replace(tzinfo=None)
+        if data.status == "Resolved" and not (ticket.resolution_notes or "").strip():
+            raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, "Resolution notes are required to resolve a ticket")
         ticket.status = data.status
 
+    db.commit()
+    ticket = get_ticket(db, user, ticket_id)
+    # Tell the requester (on every move into Resolved, including after they asked for changes).
+    if data.status == "Resolved" and previous_status != "Resolved" and background_tasks is not None:
+        background_tasks.add_task(notifications.send_email, *notifications.ticket_resolved_email(ticket))
+    return ticket
+
+
+def _get_own_open_ticket(db: Session, user: User, ticket_id: int) -> Ticket:
+    ticket = get_ticket(db, user, ticket_id)  # enforces employee ownership
+    if ticket.created_by != user.id:
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "Only the employee who raised the ticket can do this")
+    if ticket.status == "Closed":
+        raise HTTPException(status.HTTP_409_CONFLICT, "Ticket is already closed")
+    return ticket
+
+
+def close_ticket(db: Session, user: User, ticket_id: int) -> Ticket:
+    ticket = _get_own_open_ticket(db, user, ticket_id)
+    ticket.status = "Closed"
+    ticket.closed_at = datetime.now(timezone.utc).replace(tzinfo=None)
+    db.commit()
+    return get_ticket(db, user, ticket_id)
+
+
+def reopen_ticket(db: Session, user: User, ticket_id: int, data: CommentCreate) -> Ticket:
+    ticket = _get_own_open_ticket(db, user, ticket_id)
+    if ticket.status != "Resolved":
+        raise HTTPException(status.HTTP_409_CONFLICT, "Only a resolved ticket can be sent back for changes")
+    ticket.status = "In Progress"
+    db.add(Comment(ticket_id=ticket.id, author_id=user.id, body=data.body))
     db.commit()
     return get_ticket(db, user, ticket_id)
 

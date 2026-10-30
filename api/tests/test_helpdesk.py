@@ -53,7 +53,7 @@ def test_employee_cannot_use_it_endpoints(make_client):
     assert c.get("/api/users/it-team").status_code == 403
 
 
-def test_it_workflow_to_close(make_client):
+def test_workflow_resolve_and_employee_close(make_client):
     emp, it = make_client(), make_client()
     register_and_login(emp, "alice@acme.com")
     login(it, "ivan@acme.com")
@@ -67,15 +67,70 @@ def test_it_workflow_to_close(make_client):
 
     t = it.patch(f"/api/tickets/{t['id']}", json={"status": "In Progress", "priority": "Low"}).json()
     assert t["status"] == "In Progress" and t["priority"] == "Low"
+    t = it.patch(f"/api/tickets/{t['id']}", json={"status": "On Hold"}).json()
+    assert t["status"] == "On Hold"
 
-    # cannot close without resolution notes
+    # cannot resolve without resolution notes
+    assert it.patch(f"/api/tickets/{t['id']}", json={"status": "Resolved"}).status_code == 422
+    t = it.patch(f"/api/tickets/{t['id']}", json={"status": "Resolved", "resolution_notes": "Replaced SSD"}).json()
+    assert t["status"] == "Resolved" and t["resolution_notes"] == "Replaced SSD" and t["closed_at"] is None
+
+    # IT can neither set Closed nor call the close endpoint
     assert it.patch(f"/api/tickets/{t['id']}", json={"status": "Closed"}).status_code == 422
-    t = it.patch(f"/api/tickets/{t['id']}", json={"status": "Closed", "resolution_notes": "Replaced SSD"}).json()
-    assert t["status"] == "Closed" and t["closed_at"] and t["resolution_notes"] == "Replaced SSD"
+    assert it.post(f"/api/tickets/{t['id']}/close").status_code == 403
+
+    t = emp.post(f"/api/tickets/{t['id']}/close").json()
+    assert t["status"] == "Closed" and t["closed_at"]
 
     # closed tickets are frozen
     assert it.patch(f"/api/tickets/{t['id']}", json={"priority": "High"}).status_code == 409
     assert emp.post(f"/api/tickets/{t['id']}/comments", json={"body": "thanks"}).status_code == 409
+    assert emp.post(f"/api/tickets/{t['id']}/close").status_code == 409
+
+
+def test_employee_requests_changes_on_resolved_ticket(make_client):
+    emp, it = make_client(), make_client()
+    register_and_login(emp, "alice@acme.com")
+    login(it, "ivan@acme.com")
+    ivan_id = it.get("/api/users/it-team").json()[0]["id"]
+    t = emp.post("/api/tickets", json=NEW).json()
+
+    # only a Resolved ticket can be sent back
+    assert emp.post(f"/api/tickets/{t['id']}/reopen", json={"body": "still broken"}).status_code == 409
+    it.patch(f"/api/tickets/{t['id']}", json={"assigned_to": ivan_id, "resolution_notes": "Rebooted"})
+    it.patch(f"/api/tickets/{t['id']}", json={"status": "Resolved"})
+
+    assert emp.post(f"/api/tickets/{t['id']}/reopen", json={"body": "  "}).status_code == 422
+    assert it.post(f"/api/tickets/{t['id']}/reopen", json={"body": "x"}).status_code == 403
+    t = emp.post(f"/api/tickets/{t['id']}/reopen", json={"body": "Still won't boot"}).json()
+    assert t["status"] == "In Progress" and t["assignee"]["id"] == ivan_id
+    assert t["comments"][-1]["body"] == "Still won't boot"
+
+
+def test_admin_cannot_close_ticket(make_client):
+    emp, admin = make_client(), make_client()
+    register_and_login(emp, "alice@acme.com")
+    login(admin, "admin@acme.com")
+    t = emp.post("/api/tickets", json=NEW).json()
+    assert admin.post(f"/api/tickets/{t['id']}/close").status_code == 403
+    assert admin.patch(f"/api/tickets/{t['id']}", json={"status": "Closed"}).status_code == 403
+
+
+def test_assignment_sets_status_to_assigned(make_client):
+    emp, it = make_client(), make_client()
+    register_and_login(emp, "alice@acme.com")
+    login(it, "ivan@acme.com")
+    ivan_id, priya_id = [u["id"] for u in it.get("/api/users/it-team").json()][:2]
+    t = emp.post("/api/tickets", json=NEW).json()
+
+    # assign and start work in one save
+    t = it.patch(f"/api/tickets/{t['id']}", json={"assigned_to": ivan_id, "status": "In Progress"}).json()
+    assert t["status"] == "In Progress"
+    # re-saving the same assignee leaves the status alone
+    assert it.patch(f"/api/tickets/{t['id']}", json={"assigned_to": ivan_id}).json()["status"] == "In Progress"
+    # reassigning to someone else puts it back to Assigned
+    t = it.patch(f"/api/tickets/{t['id']}", json={"assigned_to": priya_id}).json()
+    assert t["status"] == "Assigned" and t["assignee"]["id"] == priya_id
 
 
 def test_invalid_transitions(make_client):
@@ -83,9 +138,9 @@ def test_invalid_transitions(make_client):
     register_and_login(emp, "alice@acme.com")
     login(it, "ivan@acme.com")
     t = emp.post("/api/tickets", json=NEW).json()
-    # Open -> In Progress is not allowed, and Assigned needs an assignee
-    assert it.patch(f"/api/tickets/{t['id']}", json={"status": "In Progress"}).status_code == 422
-    assert it.patch(f"/api/tickets/{t['id']}", json={"status": "Assigned"}).status_code == 422
+    # an Open ticket must be assigned before its status can change
+    for s in ("Assigned", "In Progress", "On Hold", "Resolved", "Closed"):
+        assert it.patch(f"/api/tickets/{t['id']}", json={"status": s}).status_code == 422
     assert it.patch(f"/api/tickets/{t['id']}", json={"assigned_to": 9999}).status_code == 422
 
 
@@ -138,3 +193,78 @@ def test_it_can_edit_and_delete_any_ticket(make_client):
     assert it.delete(f"/api/tickets/{t['id']}").status_code == 204
     assert emp.get("/api/tickets").json() == []
     assert it.delete(f"/api/tickets/{t['id']}").status_code == 404
+
+
+def test_resolving_emails_the_requester(make_client, monkeypatch):
+    from app.services import notifications
+
+    sent = []
+    monkeypatch.setattr(notifications, "send_email", lambda to, subject, body: sent.append((to, subject, body)))
+    emp, it = make_client(), make_client()
+    register_and_login(emp, "alice@acme.com", "Alice")
+    login(it, "ivan@acme.com")
+    ivan_id = it.get("/api/users/it-team").json()[0]["id"]
+    t = emp.post("/api/tickets", json=NEW).json()
+
+    it.patch(f"/api/tickets/{t['id']}", json={"assigned_to": ivan_id, "status": "In Progress"})
+    assert sent == []  # no email for other status changes
+    it.patch(f"/api/tickets/{t['id']}", json={"status": "Resolved", "resolution_notes": "Replaced the SSD"})
+    assert len(sent) == 1
+    to, subject, body = sent[0]
+    assert to == "alice@acme.com" and f"#{t['id']}" in subject
+    assert "Replaced the SSD" in body and NEW["description"] in body and "Ivan IT" in body
+    assert f"/tickets/{t['id']}" in body
+
+    it.patch(f"/api/tickets/{t['id']}", json={"priority": "Low"})
+    assert len(sent) == 1  # saving a Resolved ticket again does not re-send
+
+    # sent back by the employee and resolved again: emailed again
+    emp.post(f"/api/tickets/{t['id']}/reopen", json={"body": "Still slow"})
+    it.patch(f"/api/tickets/{t['id']}", json={"status": "Resolved"})
+    assert len(sent) == 2
+
+
+def test_email_skipped_when_smtp_not_configured(monkeypatch):
+    import smtplib
+
+    from app.core.config import Settings
+    from app.services import notifications
+
+    monkeypatch.setattr(notifications, "get_settings", lambda: Settings(smtp_host=""))
+    monkeypatch.setattr(smtplib, "SMTP", lambda *a, **k: (_ for _ in ()).throw(AssertionError("should not connect")))
+    notifications.send_email("a@acme.com", "s", "b")
+
+
+def test_session_is_renewed_while_active_and_401_messages(make_client):
+    from datetime import datetime, timedelta, timezone
+
+    import jwt
+
+    from app.core.config import get_settings
+
+    c = make_client()
+    user = register_and_login(c, "alice@acme.com")
+    # A fresh token is not reissued on every request.
+    r = c.get("/api/auth/me")
+    assert r.status_code == 200 and "set-cookie" not in r.headers
+
+    # A token with only 5 minutes left is renewed on the next request.
+    now = datetime.now(timezone.utc)
+    old = jwt.encode({"sub": str(user["id"]), "role": "employee", "iat": now - timedelta(minutes=55),
+                      "exp": now + timedelta(minutes=5)}, get_settings().jwt_secret, algorithm="HS256")
+    c.cookies.clear()
+    c.cookies.set("access_token", old)
+    r = c.get("/api/tickets")
+    assert r.status_code == 200 and "access_token=" in r.headers["set-cookie"]
+    assert old not in r.headers["set-cookie"]
+
+    # Expired token vs. no cookie at all give different, clear messages.
+    expired = jwt.encode({"sub": str(user["id"]), "role": "employee", "exp": now - timedelta(minutes=1)},
+                         get_settings().jwt_secret, algorithm="HS256")
+    c.cookies.clear()
+    c.cookies.set("access_token", expired)
+    r = c.get("/api/tickets")
+    assert r.status_code == 401 and "expired" in r.json()["detail"]
+    c.cookies.clear()
+    r = c.get("/api/tickets")
+    assert r.status_code == 401 and "logged out" in r.json()["detail"]

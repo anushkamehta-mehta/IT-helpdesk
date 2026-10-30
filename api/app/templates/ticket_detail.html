@@ -12,7 +12,7 @@
         <div><span id="badge-status"></span> <span id="badge-priority"></span></div>
       </div>
       <ol id="ticket-track" class="track" aria-label="Ticket progress">
-        <li data-step="Open">Open</li><li data-step="Assigned">Assigned</li><li data-step="In Progress">In progress</li><li data-step="Closed">Closed</li>
+        <li data-step="Open">Open</li><li data-step="Assigned">Assigned</li><li data-step="In Progress">In progress</li><li data-step="Resolved">Resolved</li><li data-step="Closed">Closed</li>
       </ol>
       <dl id="ticket-meta" class="meta"></dl>
       <h3>Description</h3>
@@ -26,9 +26,20 @@
       <p id="edit-closed" class="muted" hidden>This ticket is closed, so it can't be edited (it can still be deleted).</p>
       <div id="ticket-actions" hidden>
         <button type="button" id="edit-btn" class="btn btn-light">Edit ticket</button>
+        <button type="button" id="owner-close-btn" class="btn btn-dark">Close ticket</button>
         <button type="button" id="delete-btn" class="btn btn-danger">Delete ticket</button>
       </div>
     </div>
+
+    <form id="review-form" class="card" hidden novalidate>
+      <span class="kicker">Your review</span>
+      <h2>Is your issue fixed?</h2>
+      <p class="muted">The IT team has marked this ticket as resolved. Close it if you are happy, or tell them what still needs to change.</p>
+      <label>What still needs to change? <textarea name="body" rows="3"></textarea></label>
+      <p id="review-error" class="alert alert-bad" hidden></p>
+      <button type="button" id="accept-btn" class="btn btn-primary">Yes, close ticket</button>
+      <button type="submit" class="btn btn-light">Request changes</button>
+    </form>
 
     <form id="edit-form" class="card" hidden novalidate>
       <h2>Edit ticket</h2>
@@ -47,7 +58,7 @@
 
     <form id="it-panel" class="card" hidden novalidate>
       <h2>Manage ticket</h2>
-      <p class="muted">Assign, update the status or priority, and close with resolution notes.</p>
+      <p class="muted">Assign, update the status or priority, and resolve with resolution notes. Only the requester can close the ticket.</p>
       <div class="grid">
         <label>Assign to <select name="assignee"><option value="">Unassigned</option></select></label>
         <label>Status <select name="status"></select></label>
@@ -55,11 +66,10 @@
           <select name="priority"><option>Low</option><option>Medium</option><option>High</option></select>
         </label>
       </div>
-      <label>Resolution notes (required to close) <textarea name="resolution" rows="4"></textarea></label>
+      <label>Resolution notes (required to resolve) <textarea name="resolution" rows="4"></textarea></label>
       <p id="panel-error" class="alert alert-bad" hidden></p>
       <p id="panel-ok" class="alert alert-ok" hidden></p>
       <button type="submit" class="btn btn-primary">Save changes</button>
-      <button type="button" id="close-btn" class="btn btn-dark">Close ticket</button>
     </form>
 
     <div class="card">

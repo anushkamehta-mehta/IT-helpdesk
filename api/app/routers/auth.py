@@ -4,9 +4,9 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.core.config import get_settings
-from app.core.security import create_access_token, hash_password, verify_password
+from app.core.security import hash_password, verify_password
 from app.db.session import get_db
-from app.dependencies import COOKIE_NAME, get_current_user
+from app.dependencies import COOKIE_NAME, get_current_user, set_auth_cookie
 from app.models import User
 from app.schemas.user import LoginRequest, RegisterRequest, UserOut
 
@@ -43,16 +43,7 @@ def login(data: LoginRequest, response: Response, db: Session = Depends(get_db))
         raise HTTPException(
             status.HTTP_403_FORBIDDEN, "Your account has been blocked by the administrator. Please contact your admin."
         )
-    settings = get_settings()
-    response.set_cookie(
-        COOKIE_NAME,
-        create_access_token(user.id, user.role),
-        max_age=settings.jwt_expire_minutes * 60,
-        httponly=True,
-        secure=settings.cookie_secure,
-        samesite="lax",
-        path="/",
-    )
+    set_auth_cookie(response, user)
     return UserOut.model_validate(user)
 
 
