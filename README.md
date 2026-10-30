@@ -113,6 +113,23 @@ pytest                      # uses in-memory SQLite, no MySQL needed
 * **Database error:** check the `DB_*` values and that `database/schema.sql` was run.
 
 ## Deployment
+### Vercel
+The repo is ready for Vercel (`vercel.json` + `index.py` at the root; packages in the root `requirements.txt`).
+In the Vercel project go to **Settings > Environment Variables** and add (for Production and Preview):
+
+| Name | Value |
+|---|---|
+| `DB_HOST`, `DB_PORT`, `DB_USER`, `DB_PASSWORD`, `DB_NAME` | your Aiven values |
+| `DB_SSL_CA` | the full text of Aiven's `ca.pem` (open it in a text editor, copy everything including the BEGIN/END lines) |
+| `JWT_SECRET` | a long random string |
+| `COOKIE_SECURE` | `true` |
+| `APP_BASE_URL` | your site address, e.g. `https://your-project.vercel.app` |
+| `SMTP_*` | optional, for the "ticket resolved" email |
+
+Then **Deployments > Redeploy**. Environment variables only apply to new deployments.
+On Vercel the resolved email is sent during the save (serverless functions stop after responding), so that save takes a moment longer.
+
+### AWS
 See `docs/DEPLOYMENT_AWS.md`.
 
 ## Known limits of Version 1 (by design)
