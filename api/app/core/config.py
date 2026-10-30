@@ -1,6 +1,7 @@
 """Application settings, loaded from environment variables / the root .env file."""
 from functools import lru_cache
 from pathlib import Path
+from typing import Literal
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from sqlalchemy.engine import URL
@@ -16,12 +17,25 @@ class Settings(BaseSettings):
     db_user: str
     db_password: str  # no default on purpose: must come from the environment
     db_name: str = "it_helpdesk"
+    # Path to the server's CA certificate (e.g. Aiven's ca.pem). Set it to connect over verified SSL,
+    # which hosted MySQL such as Aiven requires. Relative paths are from the project root.
+    db_ssl_ca: str = ""
 
     jwt_secret: str  # no default on purpose
     jwt_expire_minutes: int = 60
     cookie_secure: bool = False
 
     cors_origins: str = ""
+
+    # Outgoing email (SMTP). Leave smtp_host empty to turn email off.
+    smtp_host: str = ""
+    smtp_port: int = 587
+    smtp_security: Literal["starttls", "ssl", "none"] = "starttls"
+    smtp_user: str = ""
+    smtp_password: str = ""
+    smtp_from: str = ""  # defaults to smtp_user
+    # Public address of the helpdesk, used for links in emails.
+    app_base_url: str = "http://127.0.0.1:8000"
 
     @property
     def database_url(self) -> URL:
@@ -34,6 +48,18 @@ class Settings(BaseSettings):
             port=self.db_port,
             database=self.db_name,
         )
+
+    @property
+    def db_ssl_ca_path(self) -> Path | None:
+        if not self.db_ssl_ca:
+            return None
+        path = Path(self.db_ssl_ca)
+        return path if path.is_absolute() else ROOT_DIR / path
+
+    @property
+    def database_label(self) -> str:
+        """Where the data lives, without the password, e.g. for logs."""
+        return f"{self.db_user}@{self.db_host}:{self.db_port}/{self.db_name} (SSL {'on' if self.db_ssl_ca else 'off'})"
 
     @property
     def cors_origin_list(self) -> list[str]:

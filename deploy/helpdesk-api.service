@@ -1,5 +1,5 @@
 [Unit]
-Description=IT Helpdesk API (FastAPI)
+Description=IT Helpdesk (FastAPI: pages + API)
 After=network.target
 
 [Service]

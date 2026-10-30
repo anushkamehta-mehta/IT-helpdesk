@@ -2,16 +2,16 @@
 
 ```
 Browser (HTML/CSS/JS)
-  |  GET /login, /tickets, ...  -->  Flask (web/)  : serves page shells + static JS/CSS only
-  |  fetch /api/...  (cookie)   -->  FastAPI (api/) : auth, permissions, workflow rules
+  |  GET /login, /tickets, ...  -->  FastAPI pages router (api/app/routers/pages.py): page shells + /static JS/CSS
+  |  fetch /api/...  (cookie)   -->  FastAPI API routers (api/app/routers/*)       : auth, permissions, workflow rules
                                           |
                                           v
                                        MySQL
 ```
 
-* **Flask** never touches the database and holds no business logic.
-* **FastAPI** is the only service that talks to MySQL and the single place permissions are enforced.
-* **Nginx** (production) serves both under one domain: `/api/*` -> FastAPI, everything else -> Flask.
+* One FastAPI app on one port serves both the pages and the API (same origin, so no CORS needed).
+* The page routes never touch the database and hold no business logic; the API routers are the single place permissions are enforced.
+* **Nginx** (production) proxies everything to the FastAPI service.
 
 ## Authentication
 * Passwords are hashed with Argon2.
@@ -29,16 +29,19 @@ Browser (HTML/CSS/JS)
 | Search / filter | own tickets | all tickets | - |
 | Comment | own tickets | any ticket | - |
 | Edit title/description/category/priority, delete | own tickets | any ticket | - |
-| Assign, change status, resolution notes, close | no | yes | - |
+| Assign, change status, resolution notes | no | yes | - |
+| Close, or send a resolved ticket back | own tickets | no | no |
 | Add, edit, deactivate, delete users (`/admin`) | no | no | yes |
 
 ## Ticket workflow
-`Open -> Assigned -> In Progress -> Closed`
+`Open -> Assigned -> In Progress / On Hold -> Resolved -> Closed`
 
-* Assigning an Open ticket moves it to Assigned automatically.
-* Assigned / In Progress require an assignee.
-* Closing requires resolution notes (and may be done from any open state, e.g. duplicates).
-* Closed tickets are frozen: no edits, no new comments (V1 has no re-open).
+* Assigning a ticket (or reassigning it to a different person) sets it to Assigned automatically, unless IT picks a new status in the same save.
+* An Open ticket must be assigned before IT can change its status.
+* IT moves tickets between In Progress, On Hold and Resolved (and back from Resolved to In Progress). Resolving requires resolution notes.
+* Only the employee who raised the ticket can close it (IT and admins cannot). They can close it at any time.
+* When a ticket is Resolved, the employee either closes it or sends it back with a comment explaining what still needs to change; it returns to In Progress with the same assignee.
+* Closed tickets are frozen: no edits, no new comments.
 
 ## Data model
 `users` 1-n `tickets` (created_by, assigned_to) | `categories` 1-n `tickets` | `tickets` 1-n `comments` | `users` 1-n `comments`.

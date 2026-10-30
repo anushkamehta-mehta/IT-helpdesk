@@ -192,7 +192,7 @@ form .btn + .btn { margin-left: 0.4rem; }
 .legend b { color: var(--text); margin-left: auto; }
 .legend li { display: flex; align-items: center; }
 .dot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; margin-right: 0.45rem; flex: none; }
-.c-open { background: #ff9a6e; } .c-assigned { background: #9c86ff; } .c-progress { background: var(--violet); } .c-closed { background: #cfc8e2; }
+.c-open { background: #ff9a6e; } .c-assigned { background: #9c86ff; } .c-progress { background: var(--violet); } .c-hold { background: #f2b544; } .c-resolved { background: var(--green); } .c-closed { background: #cfc8e2; }
 .c-high { background: var(--pink); } .c-medium { background: #f2a93b; } .c-low { background: var(--green); }
 .c-violet { background: var(--violet); } .c-peach { background: #ff9a6e; }
 
@@ -253,6 +253,8 @@ tbody tr:last-child td { border-bottom: 0; }
 .status-open { background: var(--peach-l); color: #c2501f; }
 .status-assigned { background: var(--violet-l); color: var(--violet-d); }
 .status-in-progress { background: #e1d8ff; color: var(--plum-l); }
+.status-on-hold { background: var(--amber-l); color: var(--amber); }
+.status-resolved { background: var(--green-l); color: #0b8a5a; }
 .status-closed { background: #efedf4; color: #7a7394; }
 .priority-high { background: var(--pink-l); color: #c42a60; }
 .priority-medium { background: var(--amber-l); color: var(--amber); }
@@ -294,7 +296,7 @@ tr.inactive td { opacity: .6; }
 .back:hover { background: var(--violet-l); }
 .title-row { display: flex; align-items: center; gap: 0.7rem; flex-wrap: wrap; }
 .title-row h1 { font-size: clamp(1.6rem, 3vw, 2.3rem); }
-.track { display: grid; grid-template-columns: repeat(4, 1fr); list-style: none; padding: 0; margin: 1.4rem 0 0.2rem; counter-reset: s; }
+.track { display: grid; grid-template-columns: repeat(5, 1fr); list-style: none; padding: 0; margin: 1.4rem 0 0.2rem; counter-reset: s; }
 .track li { position: relative; text-align: center; font-size: 0.8rem; font-weight: 700; color: var(--muted); padding-top: 2.2rem; }
 .track li::before { counter-increment: s; content: counter(s); position: absolute; top: 0; left: 50%; transform: translateX(-50%); z-index: 1; width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center; background: #fff; border: 2px solid var(--line); color: var(--muted); font-size: 0.78rem; }
 .track li::after { content: ""; position: absolute; top: 14px; left: -50%; width: 100%; height: 2px; background: var(--line); }

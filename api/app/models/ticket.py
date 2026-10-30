@@ -15,7 +15,7 @@ class Ticket(Base):
     category_id: Mapped[int] = mapped_column(ForeignKey("categories.id"), index=True)
     priority: Mapped[str] = mapped_column(Enum("Low", "Medium", "High", name="ticket_priority"), default="Medium")
     status: Mapped[str] = mapped_column(
-        Enum("Open", "Assigned", "In Progress", "Closed", name="ticket_status"), default="Open", index=True
+        Enum("Open", "Assigned", "In Progress", "On Hold", "Resolved", "Closed", name="ticket_status"), default="Open", index=True
     )
     created_by: Mapped[int] = mapped_column(ForeignKey("users.id"), index=True)
     assigned_to: Mapped[int | None] = mapped_column(ForeignKey("users.id"), index=True, nullable=True)

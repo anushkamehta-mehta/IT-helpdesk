@@ -5,12 +5,17 @@
   if (!user) return;
   const isIT = user.role === "it_team";
 
-  // Mirrors the workflow enforced by the API (the API remains the authority).
-  const NEXT = { "Open": ["Assigned", "Closed"], "Assigned": ["In Progress", "Closed"], "In Progress": ["Closed"], "Closed": [] };
+  // Statuses IT can pick; mirrors the workflow enforced by the API (the API remains the authority).
+  // Assigning sets "Assigned" automatically; only the requester can close.
+  const NEXT = {
+    "Open": [], "Assigned": ["In Progress", "On Hold", "Resolved"], "In Progress": ["On Hold", "Resolved"],
+    "On Hold": ["In Progress", "Resolved"], "Resolved": ["In Progress"], "Closed": [],
+  };
 
   const $ = (id) => document.getElementById(id);
   const panel = $("it-panel");
   const commentForm = $("comment-form");
+  const reviewForm = $("review-form");
   const editForm = $("edit-form");
   let ticket = null;
 
@@ -31,15 +36,17 @@
       ["Last updated", esc(formatDate(t.updated_at))],
       ["Closed", t.closed_at ? esc(formatDate(t.closed_at)) : "-"],
     ].map(([k, v]) => `<div><dt>${esc(k)}</dt><dd>${v}</dd></div>`).join("");
-    // Progress tracker: Open -> Assigned -> In Progress -> Closed
-    const order = ["Open", "Assigned", "In Progress", "Closed"];
-    const reached = order.indexOf(t.status);
+    // Progress tracker: Open -> Assigned -> In Progress (or On Hold) -> Resolved -> Closed
+    const order = ["Open", "Assigned", "In Progress", "Resolved", "Closed"];
+    const onHold = t.status === "On Hold";
+    const reached = order.indexOf(onHold ? "In Progress" : t.status);
     $("ticket-track").querySelectorAll("li").forEach((li, i) => {
       li.classList.toggle("done", i <= reached);
       li.classList.toggle("current", i === reached);
     });
+    $("ticket-track").querySelector('[data-step="In Progress"]').textContent = onHold ? "On hold" : "In progress";
     $("ticket-description").textContent = t.description;
-    $("resolution-box").hidden = !(t.status === "Closed" && t.resolution_notes);
+    $("resolution-box").hidden = !(["Resolved", "Closed"].includes(t.status) && t.resolution_notes);
     $("ticket-resolution").textContent = t.resolution_notes || "";
 
     $("comments").innerHTML = t.comments.length
@@ -57,9 +64,14 @@
     if (isIT && !closed) fillPanel(t);
 
     // The API lets owners and IT edit/delete; closed tickets can only be deleted.
-    const canManage = isIT || t.creator.id === user.id;
+    const isOwner = t.creator.id === user.id;
+    const canManage = isIT || isOwner;
     $("ticket-actions").hidden = !canManage;
     $("edit-btn").hidden = closed;
+    // Only the requester closes; a resolved ticket gets the review card instead.
+    $("owner-close-btn").hidden = !(isOwner && !closed && t.status !== "Resolved");
+    reviewForm.hidden = !(isOwner && t.status === "Resolved");
+    showMessage($("review-error"), "");
     $("edit-closed").hidden = !(canManage && closed);
     editForm.hidden = true;
   }
@@ -118,22 +130,67 @@
     });
   });
 
+  async function closeTicket(button, errorBox) {
+    if (!confirm("Close this ticket? Closed tickets cannot be changed.")) return;
+    showMessage(errorBox, "");
+    await submitting(button, async () => {
+      try {
+        render(await api(`/tickets/${ticketId}/close`, { method: "POST" }));
+        showMessage($("actions-ok"), "Ticket closed.");
+        $("ticket-view").scrollIntoView({ behavior: "smooth", block: "start" });
+      } catch (err) {
+        showMessage(errorBox, err.message);
+      }
+    });
+  }
+
+  $("owner-close-btn").addEventListener("click", (e) => closeTicket(e.currentTarget, $("actions-error")));
+  $("accept-btn").addEventListener("click", (e) => closeTicket(e.currentTarget, $("review-error")));
+
+  reviewForm.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const error = $("review-error");
+    showMessage(error, "");
+    const body = reviewForm.elements["body"].value.trim();
+    if (!body) return showMessage(error, "Tell the IT team what still needs to change.");
+    await submitting(reviewForm.querySelector("button[type=submit]"), async () => {
+      try {
+        render(await api(`/tickets/${ticketId}/reopen`, { method: "POST", body: { body } }));
+        reviewForm.reset();
+        showMessage($("actions-ok"), "Sent back to the IT team.");
+      } catch (err) {
+        showMessage(error, err.message);
+      }
+    });
+  });
+
+  function fillStatus(current) {
+    const statusSelect = panel.elements["status"];
+    statusSelect.innerHTML = [current, ...NEXT[current]].map((s) => `<option>${esc(s)}</option>`).join("");
+    statusSelect.value = current;
+  }
+
   function fillPanel(t) {
     const f = panel.elements;
-    const statusSelect = f["status"];
-    statusSelect.innerHTML = [t.status, ...NEXT[t.status]].map((s) => `<option>${esc(s)}</option>`).join("");
-    statusSelect.value = t.status;
+    fillStatus(t.status);
     f["priority"].value = t.priority;
     f["assignee"].value = t.assignee ? String(t.assignee.id) : "";
     f["resolution"].value = t.resolution_notes || "";
   }
 
-  function changesFromPanel(forceClose) {
+  // Picking a (new) assignee makes the ticket Assigned, as the API does on save.
+  panel.elements["assignee"].addEventListener("change", (e) => {
+    const picked = e.target.value;
+    const current = ticket.assignee ? String(ticket.assignee.id) : "";
+    fillStatus(picked && picked !== current ? "Assigned" : ticket.status);
+  });
+
+  function changesFromPanel() {
     const f = panel.elements;
     const changes = {};
     const assignee = f["assignee"].value;
     if (assignee && Number(assignee) !== (ticket.assignee && ticket.assignee.id)) changes.assigned_to = Number(assignee);
-    const status = forceClose ? "Closed" : f["status"].value;
+    const status = f["status"].value;
     if (status !== ticket.status) changes.status = status;
     if (f["priority"].value !== ticket.priority) changes.priority = f["priority"].value;
     const notes = f["resolution"].value.trim();
@@ -141,11 +198,11 @@
     return changes;
   }
 
-  async function savePanel(forceClose, button) {
+  async function savePanel(button) {
     const error = $("panel-error"), ok = $("panel-ok");
     showMessage(error, "");
     showMessage(ok, "");
-    const changes = changesFromPanel(forceClose);
+    const changes = changesFromPanel();
     if (!Object.keys(changes).length) return showMessage(error, "No changes to save.");
     await submitting(button, async () => {
       try {
@@ -165,10 +222,7 @@
     }
     panel.addEventListener("submit", (e) => {
       e.preventDefault();
-      savePanel(false, panel.querySelector("button[type=submit]"));
-    });
-    $("close-btn").addEventListener("click", (e) => {
-      if (confirm("Close this ticket? Closed tickets cannot be changed.")) savePanel(true, e.currentTarget);
+      savePanel(panel.querySelector("button[type=submit]"));
     });
   }
 

@@ -6,7 +6,7 @@ from pydantic import BaseModel, ConfigDict, StringConstraints
 from app.schemas.user import UserBrief
 
 Priority = Literal["Low", "Medium", "High"]
-Status = Literal["Open", "Assigned", "In Progress", "Closed"]
+Status = Literal["Open", "Assigned", "In Progress", "On Hold", "Resolved", "Closed"]
 
 
 class CategoryOut(BaseModel):
@@ -26,7 +26,7 @@ class TicketUpdate(BaseModel):
     """Partial update. Omitted fields are left unchanged.
 
     Ticket owners may edit title/description/category/priority; status, assignee
-    and resolution notes are IT-only.
+    and resolution notes are IT-only. Closing is done by the owner via /close.
     """
 
     title: Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=200)] | None = None

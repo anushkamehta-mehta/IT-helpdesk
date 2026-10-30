@@ -38,10 +38,11 @@
   function renderStats(all) {
     const total = all.length;
     const count = (s) => all.filter((t) => t.status === s).length;
-    const st = { Open: count("Open"), Assigned: count("Assigned"), "In Progress": count("In Progress"), Closed: count("Closed") };
+    const st = Object.fromEntries(["Open", "Assigned", "In Progress", "On Hold", "Resolved", "Closed"].map((s) => [s, count(s)]));
     const active = total - st.Closed;
     const unassigned = all.filter((t) => !t.assignee && t.status !== "Closed").length;
-    const resolved = pct(st.Closed, total);
+    const done = st.Resolved + st.Closed;
+    const resolved = pct(done, total);
     const byPriority = (p) => all.filter((t) => t.status !== "Closed" && t.priority === p).length;
 
     const segments = [
@@ -51,8 +52,12 @@
         text: isIT ? "Owned by a team member, not started yet." : "An IT team member owns your request." },
       { label: "In Progress", value: st["In Progress"], cls: "c-progress",
         text: isIT ? "Actively being worked on." : "Being worked on now. Watch the comments." },
+      { label: "On Hold", value: st["On Hold"], cls: "c-hold",
+        text: isIT ? "Paused, waiting on something." : "Paused for now. Check the comments for why." },
+      { label: "Resolved", value: st.Resolved, cls: "c-resolved",
+        text: isIT ? "Fixed, waiting for the requester to close." : "Fixed by IT. Close it, or ask for changes." },
       { label: "Closed", value: st.Closed, cls: "c-closed",
-        text: isIT ? "Resolved with notes on record." : "Resolved, with notes on what was done." },
+        text: isIT ? "Closed by the requester." : "Closed by you, with notes on what was done." },
     ];
 
     const hero = document.getElementById("hero-sub");
@@ -76,8 +81,8 @@
       <div class="band">
         <h2>${isIT ? "Transforming IT, one ticket at a time" : "Your requests, one step at a time"}</h2>
         <p class="band-sub">${isIT
-          ? "Every request moves through the same four stages. Here is where the whole queue stands right now."
-          : "Every request moves through four stages. Here is where yours stand right now."}</p>
+          ? "Every request moves through the same stages. Here is where the whole queue stands right now."
+          : "Every request moves through these stages. Here is where yours stand right now."}</p>
         <div class="band-grid">
           <div class="pulse-card">
             <div class="float"><img src="${IMG("robot.svg")}" alt=""><div>${resolved}% resolved<small>of all tickets</small></div></div>
@@ -103,8 +108,8 @@
           desc: "Active tickets that need attention soon.", percent: pct(byPriority("Medium"), active), tags: [`${pct(byPriority("Medium"), active)}% of active`, "Standard"] })}
         ${feature({ title: "Low priority", icon: "blob-clover-green.svg", num: byPriority("Low"), cls: "c-low",
           desc: "Active tickets with a workaround in place.", percent: pct(byPriority("Low"), active), tags: [`${pct(byPriority("Low"), active)}% of active`, "Routine"] })}
-        ${feature({ title: "Resolved", icon: "blob-donut.svg", num: st.Closed, cls: "c-low",
-          desc: isIT ? "Tickets closed with resolution notes." : "Your tickets that IT has closed.", percent: resolved, tags: [`${resolved}% resolved`, plural(total, "ticket")] })}
+        ${feature({ title: "Resolved", icon: "blob-donut.svg", num: done, cls: "c-low",
+          desc: isIT ? "Tickets resolved or closed, with resolution notes." : "Your tickets that IT has resolved or you have closed.", percent: resolved, tags: [`${resolved}% resolved`, plural(total, "ticket")] })}
         ${feature({ title: "Unassigned", icon: "blob-spheres.svg", num: unassigned, cls: "c-peach",
           desc: isIT ? "Active tickets still needing an owner." : "Waiting for an IT team member.", percent: pct(unassigned, active), tags: [isIT ? "Needs an owner" : "In the queue"] })}
         ${cta}

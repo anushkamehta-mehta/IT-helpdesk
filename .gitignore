@@ -1,6 +1,10 @@
 # Environment and secrets
 .env
 *.pem
+# Database dumps contain user emails and password hashes
+helpdesk_backup.sql
+*_backup.sql
+*.dump
 
 # Python
 venv/
