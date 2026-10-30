@@ -1,10 +1,2 @@
-fastapi
-uvicorn[standard]
-sqlalchemy>=2.0
-pymysql
-cryptography
-pydantic-settings
-email-validator
-argon2-cffi
-PyJWT
-jinja2
+# The package list lives in the project-root requirements.txt (Vercel reads it from there).
+-r ../requirements.txt

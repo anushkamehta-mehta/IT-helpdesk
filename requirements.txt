@@ -1,0 +1,10 @@
+fastapi
+uvicorn[standard]
+sqlalchemy>=2.0
+pymysql
+cryptography
+pydantic-settings
+email-validator
+argon2-cffi
+PyJWT
+jinja2

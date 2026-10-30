@@ -1,0 +1,8 @@
+.env
+*.pem
+*.sql.bak
+helpdesk_backup.sql
+.venv
+api/tests
+docs
+deploy

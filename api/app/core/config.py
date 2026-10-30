@@ -17,8 +17,9 @@ class Settings(BaseSettings):
     db_user: str
     db_password: str  # no default on purpose: must come from the environment
     db_name: str = "it_helpdesk"
-    # Path to the server's CA certificate (e.g. Aiven's ca.pem). Set it to connect over verified SSL,
-    # which hosted MySQL such as Aiven requires. Relative paths are from the project root.
+    # The server's CA certificate (e.g. Aiven's ca.pem), to connect over verified SSL as hosted MySQL
+    # such as Aiven requires. Either a file path (relative paths are from the project root) or the
+    # certificate text itself ("-----BEGIN CERTIFICATE-----..."), e.g. pasted into a Vercel env var.
     db_ssl_ca: str = ""
 
     jwt_secret: str  # no default on purpose
@@ -50,8 +51,14 @@ class Settings(BaseSettings):
         )
 
     @property
+    def db_ssl_ca_pem(self) -> str | None:
+        """The CA certificate when given as text rather than as a file path."""
+        value = self.db_ssl_ca.strip().replace("\\n", "\n")  # tolerate a one-line value with literal \n
+        return value if value.startswith("-----BEGIN") else None
+
+    @property
     def db_ssl_ca_path(self) -> Path | None:
-        if not self.db_ssl_ca:
+        if not self.db_ssl_ca or self.db_ssl_ca_pem:
             return None
         path = Path(self.db_ssl_ca)
         return path if path.is_absolute() else ROOT_DIR / path

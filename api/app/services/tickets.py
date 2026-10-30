@@ -145,7 +145,7 @@ def update_ticket(
     ticket = get_ticket(db, user, ticket_id)
     # Tell the requester (on every move into Resolved, including after they asked for changes).
     if data.status == "Resolved" and previous_status != "Resolved" and background_tasks is not None:
-        background_tasks.add_task(notifications.send_email, *notifications.ticket_resolved_email(ticket))
+        notifications.send_later(background_tasks, *notifications.ticket_resolved_email(ticket))
     return ticket
 
 

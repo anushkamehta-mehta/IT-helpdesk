@@ -1,9 +1,12 @@
 """Email notifications sent over SMTP. Sending runs as a background task after the response,
 so a slow or failing mail server never blocks or breaks the request; failures are logged."""
 import logging
+import os
 import smtplib
 import ssl
 from email.message import EmailMessage
+
+from fastapi import BackgroundTasks
 
 from app.core.config import get_settings
 from app.models import Ticket
@@ -36,6 +39,15 @@ def send_email(to: str, subject: str, body: str) -> None:
             smtp.send_message(msg)
     except (smtplib.SMTPException, OSError):
         log.exception("Could not send email to %s (%s)", to, subject)
+
+
+def send_later(background_tasks: BackgroundTasks, to: str, subject: str, body: str) -> None:
+    """Send after the response. On Vercel (serverless) the function may be frozen once the response
+    is sent, so there the email is sent before responding instead."""
+    if os.environ.get("VERCEL"):
+        send_email(to, subject, body)
+    else:
+        background_tasks.add_task(send_email, to, subject, body)
 
 
 def ticket_resolved_email(ticket: Ticket) -> tuple[str, str, str]:
