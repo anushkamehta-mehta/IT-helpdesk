@@ -34,7 +34,11 @@ class Settings(BaseSettings):
     smtp_security: Literal["starttls", "ssl", "none"] = "starttls"
     smtp_user: str = ""
     smtp_password: str = ""
-    smtp_from: str = ""  # defaults to smtp_user
+    smtp_from: str = ""  # sender address; defaults to smtp_user
+    # Brevo (brevo.com) HTTPS email API. When set it is used instead of SMTP, e.g. on Render's free
+    # plan, which blocks SMTP ports. SMTP_FROM must then be a sender verified in Brevo.
+    brevo_api_key: str = ""
+    mail_from_name: str = "IT Helpdesk"
     # Public address of the helpdesk, used for links in emails.
     app_base_url: str = "http://127.0.0.1:8000"
 

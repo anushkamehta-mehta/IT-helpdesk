@@ -1,9 +1,13 @@
-"""Email notifications sent over SMTP. Sending runs as a background task after the response,
-so a slow or failing mail server never blocks or breaks the request; failures are logged."""
+"""Email notifications, sent through Brevo's HTTPS API (when BREVO_API_KEY is set) or over SMTP.
+Sending runs as a background task after the response, so a slow or failing mail server never
+blocks or breaks the request; failures are logged."""
+import json
 import logging
 import os
 import smtplib
 import ssl
+import urllib.error
+import urllib.request
 from email.message import EmailMessage
 
 from fastapi import BackgroundTasks
@@ -13,12 +17,45 @@ from app.models import Ticket
 
 log = logging.getLogger(__name__)
 
+BREVO_URL = "https://api.brevo.com/v3/smtp/email"
+
 
 def send_email(to: str, subject: str, body: str) -> None:
     settings = get_settings()
-    if not settings.smtp_host:
-        log.warning("SMTP_HOST is not set; skipping email to %s (%s)", to, subject)
-        return
+    if settings.brevo_api_key:
+        _send_with_brevo(to, subject, body)
+    elif settings.smtp_host:
+        _send_with_smtp(to, subject, body)
+    else:
+        log.warning("No email provider configured (BREVO_API_KEY or SMTP_HOST); skipping email to %s (%s)", to, subject)
+
+
+def _send_with_brevo(to: str, subject: str, body: str) -> None:
+    """HTTPS instead of SMTP: works on hosts that block SMTP ports (e.g. Render's free plan)."""
+    settings = get_settings()
+    payload = {
+        "sender": {"name": settings.mail_from_name, "email": settings.smtp_from or settings.smtp_user},
+        "to": [{"email": to}],
+        "subject": subject,
+        "textContent": body,
+    }
+    request = urllib.request.Request(
+        BREVO_URL,
+        data=json.dumps(payload).encode(),
+        headers={"api-key": settings.brevo_api_key, "Content-Type": "application/json", "Accept": "application/json"},
+        method="POST",
+    )
+    try:
+        with urllib.request.urlopen(request, timeout=20):
+            pass
+    except urllib.error.HTTPError as e:
+        log.error("Could not send email to %s (%s): Brevo said %s %s", to, subject, e.code, e.read().decode(errors="replace"))
+    except (urllib.error.URLError, OSError):
+        log.exception("Could not send email to %s (%s)", to, subject)
+
+
+def _send_with_smtp(to: str, subject: str, body: str) -> None:
+    settings = get_settings()
 
     msg = EmailMessage()
     msg["From"] = settings.smtp_from or settings.smtp_user
