@@ -268,3 +268,34 @@ def test_session_is_renewed_while_active_and_401_messages(make_client):
     c.cookies.clear()
     r = c.get("/api/tickets")
     assert r.status_code == 401 and "logged out" in r.json()["detail"]
+
+
+def test_brevo_used_when_api_key_set(monkeypatch):
+    import json
+
+    from app.core.config import Settings
+    from app.services import notifications
+
+    calls = []
+
+    class FakeResponse:
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *exc):
+            return False
+
+    def fake_urlopen(request, timeout):
+        calls.append((request.full_url, request.headers, json.loads(request.data)))
+        return FakeResponse()
+
+    monkeypatch.setattr(notifications, "get_settings",
+                        lambda: Settings(brevo_api_key="key-123", smtp_from="helpdesk@acme.com", smtp_host="smtp.example.com"))
+    monkeypatch.setattr(notifications.urllib.request, "urlopen", fake_urlopen)
+    monkeypatch.setattr(notifications.smtplib, "SMTP", lambda *a, **k: (_ for _ in ()).throw(AssertionError("SMTP used")))
+
+    notifications.send_email("alice@acme.com", "Ticket #1 resolved", "Fixed")
+    url, headers, payload = calls[0]
+    assert url == notifications.BREVO_URL and headers["Api-key"] == "key-123"
+    assert payload["sender"]["email"] == "helpdesk@acme.com" and payload["to"] == [{"email": "alice@acme.com"}]
+    assert payload["subject"] == "Ticket #1 resolved" and payload["textContent"] == "Fixed"

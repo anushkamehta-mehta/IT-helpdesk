@@ -107,6 +107,7 @@ pytest                      # uses in-memory SQLite, no MySQL needed
 * **API fails to start with a validation error:** `.env` is missing or `DB_USER`/`DB_PASSWORD`/`JWT_SECRET` are not set.
 * **Login works but you are sent back to the login page:** host name mismatch (`localhost` vs `127.0.0.1`), or `COOKIE_SECURE=true` while using plain http.
 * **"Cannot reach the server":** the server terminal is not running.
+* **No email on Render (free plan):** Render's free plan blocks SMTP ports, so Gmail SMTP times out. Either use a paid instance, or create a free Brevo account, verify your sender address, and set `BREVO_API_KEY` and `SMTP_FROM` (the verified sender).
 * **No email after resolving a ticket:** check the server terminal for `Could not send email` or `SMTP_HOST is not set`. Gmail needs an App Password, not your normal password.
 * **"Invalid email or password" with the right details:** the password doesn't match the stored one. An admin can set a new one at `/admin` (Edit user), or from the terminal: `cd api` then `python -m scripts.reset_password`.
 * **Data is not where you expect (local vs. Aiven):** the server prints `Database: user@host:port/name` when it starts. `cd api` then `python -m scripts.check_db` shows the connected server and row counts.
